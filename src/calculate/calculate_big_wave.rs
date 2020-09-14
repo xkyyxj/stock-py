@@ -4,12 +4,11 @@ use sqlx::{Row, Acquire, MySql};
 use futures::channel::mpsc::{ self, Sender };
 use futures::{SinkExt, StreamExt};
 use sqlx::pool::PoolConnection;
-use crate::results::{InLow, DBResult};
-use std::time::{ SystemTime, UNIX_EPOCH };
+use crate::results::{DBResult};
 use std::collections::HashMap;
 use chrono::Local;
 
-pub fn calculate_big_wave() -> bool {
+pub async fn calculate_big_wave() -> bool {
     let columns = vec!["ts_code", "name"];
     let query_list_fut = sql::query_stock_list(&columns, "");
     let stock_list = query_list_fut.await.unwrap();
@@ -34,7 +33,7 @@ pub fn calculate_big_wave() -> bool {
         if count == each_group_num {
             println!("group count is {}", grp_count);
             let temp_tx = mpsc::Sender::clone(&tx);
-            let mut conn = crate::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+            let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             thread_pool.spawn(calculate_in_low_s(conn, ts_codes, temp_tx, code2name_map)).unwrap();
             grp_count = grp_count + 1;
             count = 0;
@@ -78,7 +77,7 @@ async fn calculate_in_low_s(mut conn: PoolConnection<MySql>,
         }
 
 
-        sql::insert(&mut conn, in_low).await;
+        //sql::insert(&mut conn, in_low).await;
     }
     // 最近三个月的最低价，或者最后一天的价格比之于最低价的涨幅低于5%
     match tx.send(1).await {

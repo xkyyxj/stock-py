@@ -5,18 +5,19 @@ use once_cell::sync::OnceCell;
 use sqlx::{MySql, Pool};
 use redis::Client;
 use crate::config;
+use std::collections::HashMap;
 
-static THREAD_POOL: OnceCell<ThreadPool> = OnceCell::new();
+pub(crate) static THREAD_POOL: OnceCell<ThreadPool> = OnceCell::new();
 
-static MYSQL_POOL: OnceCell<Pool<MySql>> = OnceCell::new();
+pub(crate) static MYSQL_POOL: OnceCell<Pool<MySql>> = OnceCell::new();
 
-static REDIS_POOL: OnceCell<Client> = OnceCell::new();
+pub(crate) static REDIS_POOL: OnceCell<Client> = OnceCell::new();
 
-fn init(mut cx: FunctionContext) -> JsResult<JsBoolean>  {
+fn init(mut cx: HashMap<String, String>) {
     let mut final_rst = true;
 
-    let mysql_info = cx.argument::<JsString>(0)?.value();
-    let redis_info = cx.argument::<JsString>(1)?.value();
+    let mysql_info = cx.get("mysql").unwrap();
+    let redis_info = cx.get("redis").unwrap();
 
     // 初始化线程池
     let mut pool_builder = ThreadPoolBuilder::new();
@@ -42,14 +43,4 @@ fn init(mut cx: FunctionContext) -> JsResult<JsBoolean>  {
         Err(_) => { final_rst = false; },
     };
 
-    // 如果有回调函数，那么执行一下回调函数
-    let args_length = cx.len();
-    if args_length > 2 {
-        let callback = cx.argument::<JsFunction>(3).unwrap();
-        let null = cx.null();
-        let args = vec![cx.number(0)];
-        callback.call(&mut cx, null, args).unwrap();
-    }
-    // 返回结果
-    Ok(cx.boolean(final_rst))
 }

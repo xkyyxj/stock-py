@@ -1,11 +1,10 @@
 use crate::sql;
 use futures::task::SpawnExt;
-use sqlx::{Row, Acquire, MySql};
+use sqlx::{Row, MySql};
 use futures::channel::mpsc::{ self, Sender };
 use futures::{SinkExt, StreamExt};
 use sqlx::pool::PoolConnection;
-use crate::results::{InLow, DBResult};
-use std::time::{ SystemTime, UNIX_EPOCH };
+use crate::results::{ InLow, DBResult };
 use std::collections::HashMap;
 use chrono::Local;
 
@@ -19,7 +18,7 @@ pub async fn calculate_in_low() -> bool {
 
     // buffer的大小是4000会不会有问题？
     let (tx, rx) = mpsc::channel::<u32>(4000);
-    let thread_pool = crate::THREAD_POOL.get().unwrap();
+    let thread_pool = crate::initialize::THREAD_POOL.get().unwrap();
 
     let mut count = 0;
     let mut grp_count = 0;
@@ -34,7 +33,7 @@ pub async fn calculate_in_low() -> bool {
         if count == each_group_num {
             println!("group count is {}", grp_count);
             let temp_tx = mpsc::Sender::clone(&tx);
-            let mut conn = crate::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+            let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             thread_pool.spawn(calculate_in_low_s(conn, ts_codes, temp_tx, code2name_map)).unwrap();
             grp_count = grp_count + 1;
             count = 0;
@@ -43,7 +42,7 @@ pub async fn calculate_in_low() -> bool {
         }
     }
 
-    let mut conn = crate::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+    let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
     thread_pool.spawn(calculate_in_low_s(conn, ts_codes, tx, code2name_map)).unwrap();
     grp_count = grp_count + 1;
 
