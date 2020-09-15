@@ -1,5 +1,5 @@
 [package]
-name = "test_rust"
+name = "stock_rt"
 version = "0.1.0"
 authors = ["Administrator"]
 edition = "2018"

@@ -114,7 +114,7 @@ impl DBResult for StockBaseInfo {
         sqlx::query("insert into ")
     }
 
-    fn bind<'a>(&'a self, mut query: Query<'a, MySql, MySqlArguments>) -> Query<'a, MySql, MySqlArguments> {
+    fn bind<'a>(&'a self, _query: Query<'a, MySql, MySqlArguments>) -> Query<'a, MySql, MySqlArguments> {
         unimplemented!()
     }
 }
@@ -143,13 +143,13 @@ impl DBResult for TimeIndexInfo {
         unimplemented!()
     }
 
-    fn bind<'a>(&'a self, query: Query<'a, MySql, MySqlArguments>) -> Query<'a, MySql, MySqlArguments> {
+    fn bind<'a>(&'a self, _query: Query<'a, MySql, MySqlArguments>) -> Query<'a, MySql, MySqlArguments> {
         unimplemented!()
     }
 }
 
 impl TimeIndexBatchInfo {
-    fn add_single_info(&mut self, single_info: &TimeIndexInfo) {
+    fn add_single_info(&mut self, _single_info: &TimeIndexInfo) {
 
     }
 }

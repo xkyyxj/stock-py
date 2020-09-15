@@ -18,7 +18,7 @@ pub async fn calculate_in_low() -> bool {
 
     // buffer的大小是4000会不会有问题？
     let (tx, rx) = mpsc::channel::<u32>(4000);
-    let thread_pool = crate::initialize::THREAD_POOL.get().unwrap();
+    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
 
     let mut count = 0;
     let mut grp_count = 0;
@@ -33,8 +33,8 @@ pub async fn calculate_in_low() -> bool {
         if count == each_group_num {
             println!("group count is {}", grp_count);
             let temp_tx = mpsc::Sender::clone(&tx);
-            let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
-            thread_pool.spawn(calculate_in_low_s(conn, ts_codes, temp_tx, code2name_map)).unwrap();
+            let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+            tokio_runtime.spawn(calculate_in_low_s(conn, ts_codes, temp_tx, code2name_map));
             grp_count = grp_count + 1;
             count = 0;
             ts_codes = Vec::<String>::with_capacity(each_group_num);
@@ -42,8 +42,8 @@ pub async fn calculate_in_low() -> bool {
         }
     }
 
-    let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
-    thread_pool.spawn(calculate_in_low_s(conn, ts_codes, tx, code2name_map)).unwrap();
+    let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+    tokio_runtime.spawn(calculate_in_low_s(conn, ts_codes, tx, code2name_map));
     grp_count = grp_count + 1;
 
     // 同步机制，确保所有的计算都已经完成

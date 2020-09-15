@@ -7,7 +7,7 @@ use sqlx::pool::PoolConnection;
 
 /// 通用查询逻辑
 pub fn common_query(sql: &str, mut f: impl FnMut(&Vec<MySqlRow>)) {
-    let pool = crate::MYSQL_POOL.get().unwrap();
+    let pool = crate::initialize::MYSQL_POOL.get().unwrap();
     let query_fut = sqlx::query(sql).fetch_all(pool);
     let all_rows = executor::block_on(query_fut).unwrap();
     f(&all_rows);
@@ -51,7 +51,7 @@ pub async fn query_stock_list(columns: &Vec<&str>, where_part: &str) -> Result<V
         query_sql = query_sql.add(where_part);
     }
 
-    let conn = super::MYSQL_POOL.get().unwrap();
+    let conn = crate::initialize::MYSQL_POOL.get().unwrap();
     sqlx::query(query_sql.as_str()).fetch_all(conn).await
 }
 
@@ -62,7 +62,7 @@ pub async fn query_stock_base_info(stock_code: &str, where_part: &str) -> Result
     if !where_part.is_empty() {
         query_sql = query_sql.add(where_part);
     }
-    let conn = super::MYSQL_POOL.get().unwrap();
+    let conn = crate::initialize::MYSQL_POOL.get().unwrap();
     sqlx::query(query_sql.as_str()).fetch_all(conn).await
 }
 

@@ -1708,6 +1708,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "stock_rt"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "chrono",
+ "encoding",
+ "futures",
+ "hyper",
+ "once_cell",
+ "paw",
+ "pyo3",
+ "redis",
+ "sqlx",
+ "tokio",
+]
+
+[[package]]
 name = "stringprep"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1758,23 +1775,6 @@ dependencies = [
  "redox_syscall",
  "remove_dir_all",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "test_rust"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "chrono",
- "encoding",
- "futures",
- "hyper",
- "once_cell",
- "paw",
- "pyo3",
- "redis",
- "sqlx",
- "tokio",
 ]
 
 [[package]]

@@ -7,31 +7,36 @@ mod config;
 mod calculate;
 mod analyzer;
 mod initialize;
+mod pywrapper;
 
 use chrono::{DateTime, Local};
-use std::env;
-use std::thread;
-use std::time::Duration;
-use sqlx::mysql::{MySqlPool, MySqlArguments};
-use std::pin::Pin;
-use futures::prelude::*;
-use futures::future::{ Future, FutureObj };
-use futures::executor::{LocalPool, ThreadPool, ThreadPoolBuilder};
-use futures::channel::mpsc::{self, Sender, Receiver};
+
+
+
+use sqlx::mysql::{MySqlArguments};
+
+
+
+use futures::executor::{ThreadPool, ThreadPoolBuilder};
+
 use futures::executor;
-use futures::task::{Spawn, SpawnExt};
-use futures::stream::StreamExt;
+use futures::task::{SpawnExt};
+
 use once_cell::sync::OnceCell;
 use sqlx::mysql::MySqlRow;
-use chrono::prelude::*;
 
-use sqlx::{Row, MySql, Pool, Error};
+
+use sqlx::{Row, MySql, Pool};
 use sqlx::query::Query;
 use sqlx::pool::PoolOptions;
-use std::fmt::Debug;
+
 use tokio::runtime::{Runtime, Builder};
-use std::thread::sleep;
+use tokio::task::JoinHandle;
+
 use std::str::FromStr;
+use std::collections::HashMap;
+use std::thread::sleep;
+use std::time::Duration;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -173,9 +178,23 @@ fn init() {
         println!("value is {}", item.pk_tablemeta);
     }
 }
+// fn main() {
+//     let mut map = HashMap::<String, String>::new();
+//     map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
+//     map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
+//     initialize::init(map);
+//
+//     let mut fetch = crate::pywrapper::TimeFetcher{is_started: false};
+//     fetch.__call__();
+//     sleep(Duration::from_secs(100000));
+// }
 
 fn main() {
-    init();
+    let mut map = HashMap::<String, String>::new();
+    map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
+    map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
+    initialize::init(map);
+    // init();
     let s1 = String::from("000001.sz");
     if s1.contains("sz") {
         println!("houhouhouhou什么乱七八糟的");
@@ -185,38 +204,41 @@ fn main() {
     new_str.insert_str(0, "sz");
     println!("hah is {}", new_str);
 
-    let vec = vec![String::from("000001.SZ")];
-    let mut rt = tokio::runtime::Runtime::new().unwrap();
-    let runtime = Builder::new()
-        .threaded_scheduler()
-        .enable_all()
-        .core_threads(8)
-        // .max_threads(8)
-        .thread_name("my-custom-name")
-        .thread_stack_size(3 * 1024 * 1024)
-        .build()
-        .unwrap();
-    //let runtime = Builder::new().threaded_scheduler().enable_all().build().unwrap();
-    let join_handler = runtime.spawn(time::fetch_index_info(vec));
-    // rt.block_on(time::fetch_index_info(vec));
+    test2222();
+    // let vec = vec![String::from("000001.SZ"), String::from("000002.SZ")];
+    // //let _rt = tokio::runtime::Runtime::new().unwrap();
+    // let runtime = Builder::new()
+    //     .threaded_scheduler()
+    //     .enable_all()
+    //     .core_threads(8)
+    //     // .max_threads(8)
+    //     .thread_name("my-custom-name")
+    //     .thread_stack_size(3 * 1024 * 1024)
+    //     .build()
+    //     .unwrap();
+    // //let runtime = Builder::new().threaded_scheduler().enable_all().build().unwrap();
+    // // let join_handler = runtime.spawn(time::fetch_index_info(vec));
+    // runtime.spawn(time::fetch_index_info(vec));
+    //rt.block_on(time::fetch_index_info(vec));
+    // sleep(Duration::from_secs(10000));
 
     // let vec2 = vec![String::from("000002.SZ")];
     // let join_handler2 = runtime.spawn(async {
     //     time::fetch_index_info(vec2).await;
     // });
-    let time_str = "2020-09-10T09:09:09-08:00";
-    //Local::now();
-    match DateTime::<Local>::from_str("2020-09-10T09:09:09-08:00") {
-        Ok(val) => println!("ok"),
-        Err(err) => println!("err is {}", format!("{:?}", err)),
-    }
-    let date_time = DateTime::<Local>::from_str("2020-09-10T09:09:09-08:00").unwrap();
+    // let _time_str = "2020-09-10T09:09:09-08:00";
+    // //Local::now();
+    // match DateTime::<Local>::from_str("2020-09-10T09:09:09-08:00") {
+    //     Ok(_val) => println!("ok"),
+    //     Err(err) => println!("err is {}", format!("{:?}", err)),
+    // }
+    // let _date_time = DateTime::<Local>::from_str("2020-09-10T09:09:09-08:00").unwrap();
     //let date_time = DateTime::<Local>::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap();
 
-    executor::block_on(async {
-        join_handler.await;
-        // /join_handler2.await;
-    });
+    // executor::block_on(async {
+    //     join_handler.await;
+    //     // /join_handler2.await;
+    // });
     // sleep(Duration::from_secs(1000));
     // init();
     // let meta = TableMeta {
@@ -238,6 +260,81 @@ fn main() {
     // for row in all_rows {
     //     let val: String = row.get("ts_code");
     //     println!("val is {}", val);
+    // }
+}
+
+fn test2222() {
+    // 下面一段代码报错了
+    let columns = vec!["ts_code"];
+    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
+    let stock_codes_rows = executor::block_on(sql::query_stock_list(&columns, "")).unwrap();
+    let mut count = 0;
+    let mut each_thread_codes = Vec::<String>::new();
+    // each_thread_codes.push(String::from("000001.SZ"));
+    // each_thread_codes.push(String::from("000002.SZ"));
+    // tokio_runtime.spawn(crate::time::fetch_index_info(each_thread_codes));
+    // each_thread_codes = Vec::<String>::new();
+    // each_thread_codes.push(String::from("002668.SZ"));
+    // each_thread_codes.push(String::from("600588.SH"));
+    // tokio_runtime.spawn(crate::time::fetch_index_info(each_thread_codes));
+    //tokio_runtime.spawn(crate::time::fetch_index_info(each_thread_codes));
+    let mut join_handlers = Vec::<JoinHandle<()>>::new();
+    for row in &stock_codes_rows {
+        let ts_code: String = row.get("ts_code");
+        each_thread_codes.push(ts_code);
+        count = count + 1;
+        if count == 330 {
+            join_handlers.push(tokio_runtime.spawn(crate::time::fetch_index_info(each_thread_codes)));
+            each_thread_codes = Vec::<String>::with_capacity(330);
+            count = 0;
+        }
+    }
+    executor::block_on(async {
+        for item in join_handlers {
+            item.await;
+        }
+    })
+
+    // let tokio_runtime = Builder::new()
+    //     .threaded_scheduler()
+    //     .enable_all()
+    //     .core_threads(8)
+    //     .thread_name("my-custom-name")
+    //     .thread_stack_size(3 * 1024 * 1024)
+    //     .build()
+    //     .unwrap();
+    // let mut each_thread_codes = Vec::<String>::new();
+    // each_thread_codes.push(String::from("000001.SZ"));
+    // each_thread_codes.push(String::from("000002.SZ"));
+    // tokio_runtime.spawn(time::fetch_index_info(each_thread_codes));
+    // sleep(Duration::from_secs(200000));
+
+    // 下面一段代码正常工作
+    // let vec = vec![String::from("000001.SZ"), String::from("000002.SZ")];
+    // //let _rt = tokio::runtime::Runtime::new().unwrap();
+    // let runtime = Builder::new()
+    //     .threaded_scheduler()
+    //     .enable_all()
+    //     .core_threads(8)
+    //     // .max_threads(8)
+    //     .thread_name("my-custom-name")
+    //     .thread_stack_size(3 * 1024 * 1024)
+    //     .build()
+    //     .unwrap();
+    // //let runtime = Builder::new().threaded_scheduler().enable_all().build().unwrap();
+    // // let join_handler = runtime.spawn(time::fetch_index_info(vec));
+    // runtime.spawn(time::fetch_index_info(vec));
+    // sleep(Duration::from_secs(10000));
+
+    // for row in &stock_codes_rows {
+    //     let ts_code: String = row.get("ts_code");
+    //     each_thread_codes.push(ts_code);
+    //     count = count + 1;
+    //     if count == 330 {
+    //         tokio_runtime.spawn(crate::time::fetch_index_info(each_thread_codes));
+    //         each_thread_codes = Vec::<String>::with_capacity(330);
+    //         count = 0;
+    //     }
     // }
 }
 

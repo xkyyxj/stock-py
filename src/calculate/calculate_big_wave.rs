@@ -18,7 +18,7 @@ pub async fn calculate_big_wave() -> bool {
 
     // buffer的大小是4000会不会有问题？
     let (tx, rx) = mpsc::channel::<u32>(4000);
-    let thread_pool = crate::THREAD_POOL.get().unwrap();
+    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
 
     let mut count = 0;
     let mut grp_count = 0;
@@ -34,7 +34,7 @@ pub async fn calculate_big_wave() -> bool {
             println!("group count is {}", grp_count);
             let temp_tx = mpsc::Sender::clone(&tx);
             let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
-            thread_pool.spawn(calculate_in_low_s(conn, ts_codes, temp_tx, code2name_map)).unwrap();
+            tokio_runtime.spawn(calculate_in_low_s(conn, ts_codes, temp_tx, code2name_map));
             grp_count = grp_count + 1;
             count = 0;
             ts_codes = Vec::<String>::with_capacity(each_group_num);
@@ -42,8 +42,8 @@ pub async fn calculate_big_wave() -> bool {
         }
     }
 
-    let mut conn = crate::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
-    thread_pool.spawn(calculate_in_low_s(conn, ts_codes, tx, code2name_map)).unwrap();
+    let conn = crate::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+    tokio_runtime.spawn(calculate_in_low_s(conn, ts_codes, tx, code2name_map));
     grp_count = grp_count + 1;
 
     // 同步机制，确保所有的计算都已经完成
@@ -55,7 +55,7 @@ pub async fn calculate_big_wave() -> bool {
 /// 单条股票的计算
 async fn calculate_in_low_s(mut conn: PoolConnection<MySql>,
                             stock_codes: Vec<String>, mut tx: Sender<u32>,
-                            code2name_map: HashMap<String, String>) {
+                            _code2name_map: HashMap<String, String>) {
     if stock_codes.is_empty() {
         match tx.send(1).await {
             Ok(_) => {},
@@ -65,7 +65,7 @@ async fn calculate_in_low_s(mut conn: PoolConnection<MySql>,
     }
 
     let date_time = Local::now();
-    let curr_date_str = date_time.format("%Y%m%d").to_string();
+    let _curr_date_str = date_time.format("%Y%m%d").to_string();
     for item in stock_codes {
         let all_vos = sql::query_stock_base_info_a_with_conn(
             &mut conn,
