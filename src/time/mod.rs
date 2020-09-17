@@ -144,5 +144,5 @@ fn process_single_info(content: String) {
         let date_time_str = String::from(main_content_v[30]) + "T" + main_content_v[31] + "-08:00";
         single_info.curr_time = DateTime::<Local>::from_str(date_time_str.as_str()).unwrap();
     }
-    println!("ret content is {}", content);
+    // println!("ret content is {}", content);
 }

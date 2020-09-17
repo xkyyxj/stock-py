@@ -42,7 +42,7 @@ pub async fn calculate_big_wave() -> bool {
         }
     }
 
-    let conn = crate::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+    let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
     tokio_runtime.spawn(calculate_in_low_s(conn, ts_codes, tx, code2name_map));
     grp_count = grp_count + 1;
 

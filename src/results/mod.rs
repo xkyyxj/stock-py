@@ -4,7 +4,7 @@ use sqlx::mysql::MySqlArguments;
 
 mod result;
 
-pub use result::{ StockBaseInfo, InLow, TimeIndexInfo };
+pub use result::{ StockBaseInfo, InLow, TimeIndexInfo, TimeIndexBatchInfo };
 
 pub trait DBResult {
     fn new() -> Self;

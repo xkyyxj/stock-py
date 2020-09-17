@@ -20,6 +20,7 @@ chrono = "0.4.13"
 hyper = "0.13"
 encoding = "0.2.33"
 redis = "0.17.0"
+flate2 = { version = "1.0.17", features = ["zlib-ng-compat"], default-features = false }
 
 [dependencies.pyo3]
 version = "0.11.1"

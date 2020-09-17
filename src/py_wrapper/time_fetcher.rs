@@ -15,6 +15,11 @@ pub struct TimeFetcher {
 
 #[pymethods]
 impl TimeFetcher {
+    #[new]
+    fn new() -> Self {
+        TimeFetcher { is_started: false }
+    }
+
     #[call]
     pub(crate) fn __call__(&mut self){
         if self.is_started {

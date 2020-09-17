@@ -7,7 +7,7 @@ mod config;
 mod calculate;
 mod analyzer;
 mod initialize;
-mod pywrapper;
+mod py_wrapper;
 
 use chrono::{DateTime, Local};
 
@@ -37,6 +37,8 @@ use std::str::FromStr;
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
+use crate::results::DBResult;
+use std::ops::Add;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -184,27 +186,49 @@ fn init() {
 //     map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
 //     initialize::init(map);
 //
-//     let mut fetch = crate::pywrapper::TimeFetcher{is_started: false};
+//     let mut fetch = crate::py_wrapper::TimeFetcher{is_started: false};
 //     fetch.__call__();
 //     sleep(Duration::from_secs(100000));
 // }
 
 fn main() {
-    let mut map = HashMap::<String, String>::new();
-    map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
-    map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
-    initialize::init(map);
-    // init();
-    let s1 = String::from("000001.sz");
-    if s1.contains("sz") {
-        println!("houhouhouhou什么乱七八糟的");
+    // let mut map = HashMap::<String, String>::new();
+    // map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
+    // map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
+    // initialize::init(map);
+    // // init();
+    // let s1 = String::from("000001.sz");
+    // if s1.contains("sz") {
+    //     println!("houhouhouhou什么乱七八糟的");
+    // }
+    // let val = s1.get(..6).unwrap();
+    // let mut new_str = String::from(val);
+    // new_str.insert_str(0, "sz");
+    // println!("hah is {}", new_str);
+    let temp_str = String::from("hehe;dada");
+    let temp_v: Vec<&str> = temp_str.split(';').collect();
+    for item in temp_v {
+        println!("v is {}", item);
     }
-    let val = s1.get(..6).unwrap();
-    let mut new_str = String::from(val);
-    new_str.insert_str(0, "sz");
-    println!("hah is {}", new_str);
+    let mut str1 = String::new();
+    {
+        let str2 = String::from("123");
+        str1 = str1.add(str2.as_str());
+    }
+    println!("str is {}", str1);
 
-    test2222();
+    let mut temp = crate::results::TimeIndexBatchInfo::new();
+    temp.ts_code = String::from("123123");
+    // println!("ts code is {}", temp.ts_code.as_str());
+    temp.ts_name = String::from("hehedada");
+    println!("hehedada {}", !temp.ts_code.is_empty());
+    //println!("ts code2 is {}", temp.ts_code.as_str());
+    let temp1 = crate::results::TimeIndexInfo::new();
+    temp.add_single_info(&temp1);
+    println!("{}", temp);
+    println!("after {}", temp.ts_code);
+
+    //test2222();
     // let vec = vec![String::from("000001.SZ"), String::from("000002.SZ")];
     // //let _rt = tokio::runtime::Runtime::new().unwrap();
     // let runtime = Builder::new()
