@@ -241,7 +241,7 @@ impl From<String> for TimeIndexBatchInfo {
         ret_val.ts_name = temp_val;
         for i in 2..v.len() {
             temp_val = String::from(v[i]);
-            ret_val.base_infos.add(temp_val.into());
+            ret_val.base_infos.push(temp_val.into());
         }
         ret_val
     }

@@ -256,6 +256,10 @@ fn main() {
     //     Ok(_val) => println!("ok"),
     //     Err(err) => println!("err is {}", format!("{:?}", err)),
     // }
+    match DateTime::<Local>::from_str("2020-09-18 23:05:33.299294600 +08:00") {
+        Ok(_val) => println!("ok， val is {}", _val),
+        Err(err) => println!("err is {}", format!("{:?}", err)),
+    }
     // let _date_time = DateTime::<Local>::from_str("2020-09-10T09:09:09-08:00").unwrap();
     //let date_time = DateTime::<Local>::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap();
 
