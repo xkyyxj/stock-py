@@ -67,6 +67,7 @@ async fn calculate_in_low_s(mut conn: PoolConnection<MySql>,
     let date_time = Local::now();
     let curr_date_str = date_time.format("%Y%m%d").to_string();
     for item in stock_codes {
+        // FIXME -- 此处写死了一个日期？？？？？？？？？？
         let all_vos = sql::query_stock_base_info_a_with_conn(
             &mut conn,
             item.as_str(),

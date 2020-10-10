@@ -90,8 +90,8 @@ impl DBResult for InLow {
         // query = query.bind(t_str);
         // t_str = String::from(&self.date.unwrap());
         // query.bind(t_str)
-        query = query.bind(self.ts_name.as_ref());
         query = query.bind(self.ts_code.as_ref());
+        query = query.bind(self.ts_name.as_ref());
         query = query.bind(self.date.as_ref());
         query.bind(self.in_price)
     }
