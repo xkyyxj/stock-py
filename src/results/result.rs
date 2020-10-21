@@ -29,6 +29,17 @@ pub struct TimeIndexBaseInfo {
     pub(crate) curr_time: DateTime<Local>           // 当前时间
 }
 
+/// 最近一段时间盈利最多的股票
+pub struct MaxWin {
+    pub(crate) ts_code: String,                     // 股票编码
+    pub(crate) in_price: f64,                       // 进入价格
+    pub(crate) start_date: String,                  // 从该天开始计算收益
+    pub(crate) delta_days: i64,                     // 计算周期（in_date - start_date之间交易日）
+    pub(crate) win_pct: f64,                        // 获利百分比
+    pub(crate) industry: String,                    // 所属行业
+    pub(crate) in_date: String                      // 计算时间
+}
+
 pub struct TimeIndexBatchInfo {
     pub(crate) ts_code: String,                     // 股票名称
     pub(crate) ts_name: String,                     // 股票编码

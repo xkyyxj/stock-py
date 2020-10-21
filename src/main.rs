@@ -39,6 +39,7 @@ use std::thread::sleep;
 use std::time::Duration;
 use crate::results::DBResult;
 use std::ops::Add;
+use futures::future::{Future, BoxFuture};
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -192,10 +193,10 @@ fn init() {
 // }
 
 fn main() {
-    // let mut map = HashMap::<String, String>::new();
-    // map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
-    // map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
-    // initialize::init(map);
+    let mut map = HashMap::<String, String>::new();
+    map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
+    map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
+    initialize::init(map);
     // // init();
     // let s1 = String::from("000001.sz");
     // if s1.contains("sz") {
@@ -227,6 +228,15 @@ fn main() {
     temp.add_single_info(&temp1);
     println!("{}", temp);
     println!("after {}", temp.ts_code);
+
+    let value2 = async {
+        println!("hehedada");
+    };
+    // let value: BoxFuture<()> = Box::pin(hehe1()); // 这是正确的写法
+    // let value: Box<dyn Future<Output=()>> = Box::new(hehe1()); // 这是错误的写法
+    // executor::block_on(value);
+
+    executor::block_on(calculate::calculate_max_win());
 
     //test2222();
     // let vec = vec![String::from("000001.SZ"), String::from("000002.SZ")];
@@ -290,6 +300,14 @@ fn main() {
     //     println!("val is {}", val);
     // }
 }
+
+// fn test333<'a>(target_fun: impl Fn() -> BoxFuture<'a, ()>) {
+//     hehe1()
+// }
+
+// fn test44() -> impl Future<Output=()> {
+//
+// }
 
 fn test2222() {
     // 下面一段代码报错了
@@ -366,7 +384,7 @@ fn test2222() {
     // }
 }
 
-async fn hehe1() {
+async fn hehe1() -> () {
     let conn = MYSQL_POOL.get().unwrap();
     sqlx::query(r#"select * from stock_base_info limit 10"#).fetch_all(conn).await.unwrap();
 }

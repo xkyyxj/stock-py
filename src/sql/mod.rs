@@ -76,6 +76,7 @@ pub async fn query_stock_base_info_with_conn(conn: &mut PoolConnection<MySql>, s
     sqlx::query(query_sql.as_str()).fetch_all(conn).await
 }
 
+///
 pub async fn query_stock_base_info_a(stock_code: &str, where_part: &str) -> Vec::<StockBaseInfo> {
     let all_rows = query_stock_base_info(stock_code, where_part).await.unwrap();
 
