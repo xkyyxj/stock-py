@@ -1,14 +1,16 @@
 mod calculate_low;
 mod calculate_big_wave;
 mod calculate_max_win;
+mod calculate_history_down;
 
 pub use calculate_low::calculate_in_low;
 pub use calculate_max_win::calculate_max_win;
+pub use calculate_history_down::calculate_history_down;
 use crate::sql;
 use std::collections::HashMap;
 use futures::channel::mpsc;
 use sqlx::{Row, MySql};
-use futures::{StreamExt, Future};
+use futures::{StreamExt, Future, SinkExt};
 use sqlx::pool::PoolConnection;
 use futures::channel::mpsc::Sender;
 use futures::future::BoxFuture;
@@ -22,7 +24,7 @@ pub async fn calculate_wrapper(mut target_function: fn(PoolConnection<MySql>, Ve
     println!("all stock num is {}, and each group num is {}",stock_num, each_group_num);
 
     // buffer的大小是4000会不会有问题？
-    let (tx, rx) = mpsc::channel::<u32>(4000);
+    let (mut tx, rx) = mpsc::channel::<u32>(4000);
     let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
 
     let mut count = 0;
@@ -37,8 +39,8 @@ pub async fn calculate_wrapper(mut target_function: fn(PoolConnection<MySql>, Ve
         ts_codes.push(ts_code);
         if count == each_group_num {
             println!("group count is {}", grp_count);
-            let temp_tx = mpsc::Sender::clone(&tx);
             let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+            let temp_tx = mpsc::Sender::clone(&tx);
             target_function(conn, ts_codes, temp_tx, code2name_map);
             grp_count = grp_count + 1;
             count = 0;
@@ -50,6 +52,11 @@ pub async fn calculate_wrapper(mut target_function: fn(PoolConnection<MySql>, Ve
     let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
     if !ts_codes.is_empty() {
         target_function(conn, ts_codes, tx, code2name_map);
+    }
+    else {
+        tx.send(1);
+        tx.flush().await;
+        tx.close().await;
     }
     grp_count = grp_count + 1;
 

@@ -6,6 +6,7 @@ use futures::future::BoxFuture;
 use futures::SinkExt;
 use chrono::Local;
 use crate::sql;
+use crate::utils::time_utils;
 
 pub async fn calculate_max_win() -> bool {
     fn temp(mut conn: PoolConnection<MySql>,
@@ -18,10 +19,10 @@ pub async fn calculate_max_win() -> bool {
 }
 
 pub async fn calculate_max_win_s(mut conn: PoolConnection<MySql>,
-                              stock_codes: Vec<String>, mut tx: Sender<u32>,
+                              stock_codes: Vec<String>, tx: Sender<u32>,
                               code2name_map: HashMap<String, String>) {
+    let curr_date_str = time_utils::curr_date_str("%Y%m%d");
     let date_time = Local::now();
-    let curr_date_str = date_time.format("%Y%m%d").to_string();
     for item in stock_codes {
         let all_vos = sql::query_stock_base_info_a_with_conn(
             &mut conn,
@@ -31,5 +32,17 @@ pub async fn calculate_max_win_s(mut conn: PoolConnection<MySql>,
         if all_vos.is_empty() {
             continue;
         }
+
+        // 起始计算日期
+        let mut start_index = 0;
+        if all_vos.len() > crate::config::MAX_WIN_CAL_PERIOD {
+            start_index = all_vos.len() - crate::config::MAX_WIN_CAL_PERIOD;
+        }
+        // 计算周期长度（只计算交易日）
+        let cal_period_num = all_vos.len() - start_index;
+        let last_close = all_vos[all_vos.len() - 1].close;
+        let start_close = all_vos[start_index].close;
+        let win_pct = (last_close - start_close) / start_close;
+
     }
 }

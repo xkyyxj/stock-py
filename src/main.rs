@@ -8,6 +8,7 @@ mod calculate;
 mod analyzer;
 mod initialize;
 mod py_wrapper;
+mod utils;
 
 use chrono::{DateTime, Local};
 
@@ -206,37 +207,37 @@ fn main() {
     // let mut new_str = String::from(val);
     // new_str.insert_str(0, "sz");
     // println!("hah is {}", new_str);
-    let temp_str = String::from("hehe;dada");
-    let temp_v: Vec<&str> = temp_str.split(';').collect();
-    for item in temp_v {
-        println!("v is {}", item);
-    }
-    let mut str1 = String::new();
-    {
-        let str2 = String::from("123");
-        str1 = str1.add(str2.as_str());
-    }
-    println!("str is {}", str1);
-
-    let mut temp = crate::results::TimeIndexBatchInfo::new();
-    temp.ts_code = String::from("123123");
-    // println!("ts code is {}", temp.ts_code.as_str());
-    temp.ts_name = String::from("hehedada");
-    println!("hehedada {}", !temp.ts_code.is_empty());
-    //println!("ts code2 is {}", temp.ts_code.as_str());
-    let temp1 = crate::results::TimeIndexInfo::new();
-    temp.add_single_info(&temp1);
-    println!("{}", temp);
-    println!("after {}", temp.ts_code);
-
-    let value2 = async {
-        println!("hehedada");
-    };
+    // let temp_str = String::from("hehe;dada");
+    // let temp_v: Vec<&str> = temp_str.split(';').collect();
+    // for item in temp_v {
+    //     println!("v is {}", item);
+    // }
+    // let mut str1 = String::new();
+    // {
+    //     let str2 = String::from("123");
+    //     str1 = str1.add(str2.as_str());
+    // }
+    // println!("str is {}", str1);
+    //
+    // let mut temp = crate::results::TimeIndexBatchInfo::new();
+    // temp.ts_code = String::from("123123");
+    // // println!("ts code is {}", temp.ts_code.as_str());
+    // temp.ts_name = String::from("hehedada");
+    // println!("hehedada {}", !temp.ts_code.is_empty());
+    // //println!("ts code2 is {}", temp.ts_code.as_str());
+    // let temp1 = crate::results::TimeIndexInfo::new();
+    // temp.add_single_info(&temp1);
+    // println!("{}", temp);
+    // println!("after {}", temp.ts_code);
+    //
+    // let value2 = async {
+    //     println!("hehedada");
+    // };
     // let value: BoxFuture<()> = Box::pin(hehe1()); // 这是正确的写法
     // let value: Box<dyn Future<Output=()>> = Box::new(hehe1()); // 这是错误的写法
     // executor::block_on(value);
 
-    executor::block_on(calculate::calculate_max_win());
+    executor::block_on(calculate::calculate_history_down());
 
     //test2222();
     // let vec = vec![String::from("000001.SZ"), String::from("000002.SZ")];
