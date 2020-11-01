@@ -1,3 +1,5 @@
+mod async_cache;
+
 use redis::Commands;
 
 pub fn set(_key: &str, _content: &str) {
