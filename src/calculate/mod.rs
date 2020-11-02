@@ -10,12 +10,11 @@ use crate::sql;
 use std::collections::HashMap;
 use futures::channel::mpsc;
 use sqlx::{Row, MySql};
-use futures::{StreamExt, Future, SinkExt};
+use futures::{StreamExt, SinkExt};
 use sqlx::pool::PoolConnection;
 use futures::channel::mpsc::Sender;
-use futures::future::BoxFuture;
 
-pub async fn calculate_wrapper(mut target_function: fn(PoolConnection<MySql>, Vec<String>, Sender<u32>, HashMap<String, String>)) -> bool {
+pub async fn calculate_wrapper(target_function: fn(PoolConnection<MySql>, Vec<String>, Sender<u32>, HashMap<String, String>)) -> bool {
     let columns = vec!["ts_code", "name"];
     let query_list_fut = sql::query_stock_list(&columns, "");
     let stock_list = query_list_fut.await.unwrap();

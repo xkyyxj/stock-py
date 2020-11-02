@@ -11,11 +11,9 @@ mod utils;
 
 use pyo3::prelude::*;
 use pyo3::{wrap_pyfunction};
-use initialize::init;
 use py_wrapper::{ init_py_module };
 use pyo3::types::PyDict;
 use std::collections::HashMap;
-use futures::executor;
 
 #[pymodule]
 fn stock_py(_py: Python, module: &PyModule) -> PyResult<()> {

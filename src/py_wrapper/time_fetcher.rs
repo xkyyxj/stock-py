@@ -3,7 +3,6 @@ use crate::time::fetch_index_info;
 use futures::executor;
 use pyo3::prelude::*;
 use sqlx::Row;
-use tokio::runtime::Builder;
 
 // 每个线程负责拉取的股票数量
 static EACH_THREAD_FETCH_NUM: usize = 330;

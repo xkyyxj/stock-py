@@ -2,8 +2,6 @@ use sqlx::pool::PoolConnection;
 use sqlx::MySql;
 use futures::channel::mpsc::Sender;
 use std::collections::HashMap;
-use futures::future::BoxFuture;
-use futures::SinkExt;
 use chrono::Local;
 use crate::sql;
 use crate::utils::time_utils;

@@ -1,6 +1,7 @@
 mod async_cache;
 
 use redis::Commands;
+pub use async_cache::AsyncRedisOperation;
 
 pub fn set(_key: &str, _content: &str) {
     // let client = crate::initialize::REDIS_POOL.get().unwrap();

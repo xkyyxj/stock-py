@@ -10,7 +10,7 @@ mod initialize;
 mod py_wrapper;
 mod utils;
 
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, FixedOffset};
 
 
 
@@ -41,6 +41,8 @@ use std::time::Duration;
 use crate::results::DBResult;
 use std::ops::Add;
 use futures::future::{Future, BoxFuture};
+use redis::{AsyncCommands, Commands};
+use crate::time::fetch_index_info;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -193,11 +195,28 @@ fn init() {
 //     sleep(Duration::from_secs(100000));
 // }
 
+// fn test_aysnc1() {
+//     let client = crate::initialize::REDIS_POOL.get().unwrap();
+//     let mut connection = client.get_async_connection().await.unwrap();
+// }
+
 fn main() {
     let mut map = HashMap::<String, String>::new();
     map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
     map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
     initialize::init(map);
+    let ts_codes = vec![String::from("000001.SZ")];
+    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
+    let join_handler = tokio_runtime.spawn(fetch_index_info(ts_codes));
+    executor::block_on(async {
+        join_handler.await;
+    });
+    // test_aysnc1();
+    // let temp_future = async {
+    //     let mut async_conn = redis_client.get_async_connection().await.unwrap();
+    //     async_conn.set("123", "123");
+    // };
+    // executor::block_on(temp_future);
     // // init();
     // let s1 = String::from("000001.sz");
     // if s1.contains("sz") {
@@ -237,7 +256,7 @@ fn main() {
     // let value: Box<dyn Future<Output=()>> = Box::new(hehe1()); // 这是错误的写法
     // executor::block_on(value);
 
-    executor::block_on(calculate::calculate_history_down());
+    // executor::block_on(calculate::calculate_history_down());
 
     //test2222();
     // let vec = vec![String::from("000001.SZ"), String::from("000002.SZ")];
@@ -263,17 +282,17 @@ fn main() {
     // });
     // let _time_str = "2020-09-10T09:09:09-08:00";
     // //Local::now();
-    // match DateTime::<Local>::from_str("2020-09-10T09:09:09-08:00") {
-    //     Ok(_val) => println!("ok"),
-    //     Err(err) => println!("err is {}", format!("{:?}", err)),
-    // }
-    match DateTime::<Local>::from_str("2020-09-18 23:05:33.299294600 +08:00") {
+    match DateTime::<Local>::from_str("2020-11-02T15:00:03 +08:00") {
         Ok(_val) => println!("ok， val is {}", _val),
         Err(err) => println!("err is {}", format!("{:?}", err)),
     }
+    // match DateTime::<Local>::from_str("2020-09-18 23:05:33.299294600 +08:00") {
+    //     Ok(_val) => println!("ok， val is {}", _val),
+    //     Err(err) => println!("err is {}", format!("{:?}", err)),
+    // }
     // let _date_time = DateTime::<Local>::from_str("2020-09-10T09:09:09-08:00").unwrap();
-    //let date_time = DateTime::<Local>::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap();
-
+    // let date_time = DateTime::<FixedOffset>::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap();
+    // println!("val is {}", date_time);
     // executor::block_on(async {
     //     join_handler.await;
     //     // /join_handler2.await;

@@ -1,15 +1,41 @@
-use futures::prelude::*;
-use redis::AsyncCommands;
+use redis::{AsyncCommands, ToRedisArgs, FromRedisValue};
 use redis::aio::Connection;
 
-pub async fn get_connection(&client: redis::Client) {
-    client.get_async_connection().await.unwrap()
+pub struct AsyncRedisOperation {
+    connection: Connection,
 }
 
-pub async fn set(key: &str, value: &str, &mut conn: Connection) {
-    conn.set(key, value);
+impl AsyncRedisOperation {
+    pub(crate) async fn new() -> Self {
+        let client = crate::initialize::REDIS_POOL.get().unwrap();
+        let mut connection = client.get_async_connection().await.unwrap();
+        AsyncRedisOperation {
+            connection
+        }
+    }
+
+    pub(crate) async fn set<K, V>(&mut self, key: K, value: V)
+        where K: ToRedisArgs + Sync + Send,
+              V: ToRedisArgs + Sync + Send {
+        let _: () = self.connection.set(key, value).await.unwrap();
+    }
+
+    pub(crate) async fn get<K, RV>(&mut self, key: K) -> Option<RV>
+        where K: ToRedisArgs + Sync + Send,
+              RV: FromRedisValue {
+        match self.connection.get(key).await {
+            Ok(val) => {
+                Some(val)
+            },
+            Err(_) => {
+                None
+            }
+        }
+    }
+
+    pub(crate) async fn delete<K>(&mut self, key: K)
+        where K: ToRedisArgs + Sync + Send {
+        let _: () = self.connection.del(key).await.unwrap();
+    }
 }
 
-pub async fn get(key: &str, &mut conn: Connection) {
-    conn.get(key).unwrap()
-}

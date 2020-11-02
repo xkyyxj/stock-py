@@ -10,3 +10,34 @@ pub(crate) static MIN_HISTORY_DOWN_DAYS: usize = 200;
 
 /// 历史低值：比历史最低值高多少仍然算作是历史最低值
 pub(crate) static MIN_HISTORY_DOWN_UP_PCT: f64 = 0.05;
+
+/// 实时信息的获取间隔
+pub(crate) static INDEX_INFO_FETCH_DELTA: i64 = 3;
+
+pub struct Config {
+    pub(crate) mysql_max_connection: usize,
+    pub(crate) max_win_cal_period: usize,
+    pub(crate) min_history_down_days: usize,
+    pub(crate) min_history_down_up_pct: f64,
+    pub(crate) index_info_fetch_delta: i64,
+}
+
+impl Config {
+    pub(crate) fn new() -> Self {
+        Config {
+            mysql_max_connection: MYSQL_MAX_CONNECTION,
+            max_win_cal_period: MAX_WIN_CAL_PERIOD,
+            min_history_down_days: MIN_HISTORY_DOWN_DAYS,
+            min_history_down_up_pct: MIN_HISTORY_DOWN_UP_PCT,
+            index_info_fetch_delta: INDEX_INFO_FETCH_DELTA
+        }
+    }
+
+    pub(crate) fn set_mysql_max_connection(&mut self, conn_num: usize) {
+        self.mysql_max_connection = conn_num;
+    }
+
+    pub(crate) fn set_index_info_fetch_delta(&mut self, delta: i64) {
+        self.index_info_fetch_delta = delta;
+    }
+}

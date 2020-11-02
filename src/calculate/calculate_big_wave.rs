@@ -1,10 +1,8 @@
 use crate::sql;
-use futures::task::SpawnExt;
-use sqlx::{Row, Acquire, MySql};
-use futures::channel::mpsc::{ self, Sender };
-use futures::{SinkExt, StreamExt};
+use sqlx::{MySql};
+use futures::channel::mpsc::{ Sender };
+use futures::{SinkExt};
 use sqlx::pool::PoolConnection;
-use crate::results::{DBResult};
 use std::collections::HashMap;
 use chrono::Local;
 

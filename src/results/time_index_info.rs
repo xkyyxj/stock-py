@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, FixedOffset};
 use crate::results::DBResult;
 use sqlx::query::Query;
 use sqlx::MySql;
@@ -95,6 +95,24 @@ impl Display for TimeIndexBaseInfo {
     }
 }
 
+impl std::cmp::PartialEq<TimeIndexBaseInfo> for TimeIndexBaseInfo {
+    fn eq(&self, other: &Self) -> bool {
+        if self.buy_num == other.buy_num
+            && self.buy_price == other.buy_price
+            && self.curr_price == other.curr_price
+            // && self.curr_time == other.curr_time
+            && self.sold_num == other.sold_num
+            && self.sold_price == other.sold_price
+            && self.t_max == other.t_max
+            && self.t_min == other.t_min
+            && self.t_open == other.t_open
+            && self.y_close == other.y_close {
+            return true
+        }
+        false
+    }
+}
+
 impl From<String> for TimeIndexBaseInfo {
     /// 字符串格式：
     /// 今日开盘价,昨日收盘价,当前价格,今日最高价,今日最低价,买一,买二,买三, \
@@ -111,7 +129,7 @@ impl From<String> for TimeIndexBaseInfo {
             sold_price: [0f64; 5],
             buy_num: [0; 5],
             sold_num: [0; 5],
-            curr_time: Local::now()
+            curr_time: DateTime::from(Local::now())
         };
         let v: Vec<&str> = val.split(',').collect();
         ret_val.t_open = v[0].parse().unwrap();
@@ -160,36 +178,37 @@ impl From<String> for TimeIndexBatchInfo {
             ts_name: "".to_string(),
             base_infos: vec![]
         };
-        let v: Vec<&str> = val.split(':').collect();
+        let v: Vec<&str> = val.split('~').collect();
         let mut temp_val = String::from(v[0]);
         ret_val.ts_code = temp_val;
         temp_val = String::from(v[1]);
         ret_val.ts_name = temp_val;
         for i in 2..v.len() {
             temp_val = String::from(v[i]);
-            ret_val.base_infos.push(temp_val.into());
+            if !v[i].is_empty() {
+                ret_val.base_infos.push(temp_val.into());
+            }
         }
         ret_val
     }
 }
 
 impl Display for TimeIndexBatchInfo {
-    /// 返回的数据格式：股票编码：股票名称：今日开盘价,昨日收盘价,当前价格,今日最高价,今日最低价,买一,买二,买三, \
+    /// 返回的数据格式：股票编码~股票名称~今日开盘价,昨日收盘价,当前价格,今日最高价,今日最低价,买一,买二,买三, \
     /// 买四,买五,卖一,卖二,卖三,卖四,卖五,买一数量,买二数量,买三数量,买四数量,卖一数量,卖二数量,卖三数量,卖四数量,\
-    /// 卖五数量,当前时间;今日开盘价,昨日收盘价,当前价格,今日最高价,今日最低价,买一,买二,买三, \
+    /// 卖五数量,当前时间~今日开盘价,昨日收盘价,当前价格,今日最高价,今日最低价,买一,买二,买三, \
     /// 买四,买五,卖一,卖二,卖三,卖四,卖五,买一数量,买二数量,买三数量,买四数量,卖一数量,卖二数量,卖三数量,卖四数量,\
     /// 卖五数量,当前时间……
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut rst_str = String::new();
         rst_str = rst_str.add(self.ts_code.as_str());
-        rst_str.push(':');
+        rst_str.push('~');
         rst_str = rst_str.add(self.ts_name.as_str());
-        rst_str.push(':');
+        rst_str.push('~');
         for item in &self.base_infos {
             rst_str = rst_str.add(item.to_string().as_str());
-            rst_str.push(';')
+            rst_str.push('~');
         }
-        rst_str.push(':');
         f.pad(rst_str.as_str())
     }
 }
@@ -211,5 +230,28 @@ impl TimeIndexBatchInfo {
         self.base_infos.push(_single_info.into());
     }
 
+    pub(crate) fn get_last_info(&self) -> Option<&TimeIndexBaseInfo> {
+        if self.base_infos.is_empty() {
+            return None
+        }
+        self.base_infos.get(self.base_infos.len() - 1)
+    }
+}
+
+impl TimeIndexInfo {
+    pub(crate) fn get_base_info(&self) -> TimeIndexBaseInfo {
+        TimeIndexBaseInfo {
+            t_open: self.t_open,
+            y_close: self.y_close,
+            curr_price: self.curr_price,
+            t_max: self.t_max,
+            t_min: self.t_min,
+            buy_price: self.buy_price,
+            sold_price: self.sold_price,
+            buy_num: self.buy_num,
+            sold_num: self.sold_num,
+            curr_time: self.curr_time.clone()
+        }
+    }
 }
 
