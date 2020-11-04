@@ -11,7 +11,7 @@ use std::str::FromStr;
 use crate::cache::AsyncRedisOperation;
 use redis::aio::Connection;
 
-static INDEX_SUFFIX: &str = "_index";
+pub(crate) static INDEX_SUFFIX: &str = "_index";
 
 /// 获取股票的实时信息
 pub async fn fetch_index_info(stock_code: Vec<String>) {
@@ -49,9 +49,8 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
     loop {
         // 当前时间在开盘时间之内
         let curr_time = Local::now();
-        println!("curr time is {}", curr_time);
-        // if (curr_time >= _up_begin_time && curr_time <= _up_end_time) ||
-        //     (curr_time >= _down_begin_time && curr_time <= _down_end_time) {
+        if (curr_time >= _up_begin_time && curr_time <= _up_end_time) ||
+            (curr_time >= _down_begin_time && curr_time <= _down_end_time) {
             // Parse an `http::Uri`...
             let uri = target_string.parse().unwrap();
             // Await the response...
@@ -69,26 +68,26 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
                         sleep(real_sleep_time.to_std().unwrap()).await;
                     }
                 }
-            // }
+            }
         }
 
         // 上午到下午之间的间歇，休眠
-        // if curr_time > _up_end_time && curr_time <= _down_begin_time {
-        //     let temp_duration = (_down_begin_time - _up_end_time).to_std().unwrap();
-        //     sleep(temp_duration).await;
-        // }
-        //
-        // // 到了第二天，呵呵哒哒
-        // if curr_time > _down_end_time {
-        //     let next_day_duration = Duration::hours(24);
-        //     _up_begin_time = _up_begin_time.add(next_day_duration);
-        //     let temp_duration = (_up_begin_time - _down_end_time).to_std().unwrap();
-        //     _up_end_time = _up_end_time.add(next_day_duration);
-        //     _down_begin_time = _down_begin_time.add(next_day_duration);
-        //     _down_end_time = _down_end_time.add(next_day_duration);
-        //     del_cache(&stock_code, &mut redis_ope).await;
-        //     sleep(temp_duration).await;
-        // }
+        if curr_time > _up_end_time && curr_time <= _down_begin_time {
+            let temp_duration = (_down_begin_time - _up_end_time).to_std().unwrap();
+            sleep(temp_duration).await;
+        }
+
+        // 到了第二天，呵呵哒哒
+        if curr_time > _down_end_time {
+            let next_day_duration = Duration::hours(24);
+            _up_begin_time = _up_begin_time.add(next_day_duration);
+            let temp_duration = (_up_begin_time - _down_end_time).to_std().unwrap();
+            _up_end_time = _up_end_time.add(next_day_duration);
+            _down_begin_time = _down_begin_time.add(next_day_duration);
+            _down_end_time = _down_end_time.add(next_day_duration);
+            del_cache(&stock_code, &mut redis_ope).await;
+            sleep(temp_duration).await;
+        }
 
     }
 }

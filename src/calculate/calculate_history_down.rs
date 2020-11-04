@@ -58,7 +58,7 @@ async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
         history_down.ts_code = item;
         history_down.his_down_price = his_down_price;
         history_down.in_price = last_day_close;
-        history_down.in_date = String::from(all_vos[all_vos.len() - 1].trade_date.as_ref().unwrap());
+        history_down.in_date = String::from(&all_vos[all_vos.len() - 1].trade_date);
         history_down.history_len = delta_days as i64;
         history_down.delta_pct = (history_down.in_price - history_down.his_down_price) /
             history_down.his_down_price;

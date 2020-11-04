@@ -1783,6 +1783,7 @@ dependencies = [
  "redis",
  "sqlx",
  "tokio",
+ "winapi 0.3.9",
 ]
 
 [[package]]

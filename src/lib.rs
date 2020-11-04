@@ -20,6 +20,7 @@ fn stock_py(_py: Python, module: &PyModule) -> PyResult<()> {
     module.add_wrapped(wrap_pyfunction!(initialize)).unwrap();
     init_py_module(module);
     module.add_class::<py_wrapper::TimeFetcher>()?;
+    module.add_class::<py_wrapper::HistoryDownAna>()?;
     Ok(())
 }
 

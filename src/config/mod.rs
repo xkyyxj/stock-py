@@ -14,6 +14,7 @@ pub(crate) static MIN_HISTORY_DOWN_UP_PCT: f64 = 0.05;
 /// 实时信息的获取间隔
 pub(crate) static INDEX_INFO_FETCH_DELTA: i64 = 3;
 
+#[derive(Debug)]
 pub struct Config {
     pub(crate) mysql_max_connection: usize,
     pub(crate) max_win_cal_period: usize,

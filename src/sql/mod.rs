@@ -13,6 +13,14 @@ pub fn common_query(sql: &str, mut f: impl FnMut(&Vec<MySqlRow>)) {
     f(&all_rows);
 }
 
+/// 通用查询异步版
+pub async fn async_common_query(sql: &str, mut f: impl FnMut(&Vec<MySqlRow>)) {
+    let pool = crate::initialize::MYSQL_POOL.get().unwrap();
+    if let Ok(all_rows) = sqlx::query(sql).fetch_all(pool).await {
+        f(&all_rows);
+    }
+}
+
 pub async fn insert(conn: &mut PoolConnection<MySql>, val: impl DBResult) -> bool {
     let mut query = val.insert();
     query = val.bind(query);
@@ -84,9 +92,9 @@ pub async fn query_stock_base_info_a(stock_code: &str, where_part: &str) -> Vec:
     for row in all_rows {
         let mut temp_val = StockBaseInfo::new();
         let ts_code: String = row.get("ts_code");
-        temp_val.trade_date = Some(ts_code);
+        temp_val.trade_date = ts_code;
         let trade_date: String = row.get("trade_date");
-        temp_val.trade_date = Some(trade_date);
+        temp_val.trade_date = trade_date;
         let mut temp_f: f64 = row.get("close");
         temp_val.close = temp_f;
         temp_f = row.get("open");
@@ -117,9 +125,9 @@ pub async fn query_stock_base_info_a_with_conn(conn: &mut PoolConnection<MySql>,
     for row in all_rows {
         let mut temp_val = StockBaseInfo::new();
         let ts_code: String = row.get("ts_code");
-        temp_val.trade_date = Some(ts_code);
+        temp_val.trade_date = ts_code;
         let trade_date: String = row.get("trade_date");
-        temp_val.trade_date = Some(trade_date);
+        temp_val.trade_date = trade_date;
         let mut temp_f: f64 = row.get("close");
         temp_val.close = temp_f;
         temp_f = row.get("open");

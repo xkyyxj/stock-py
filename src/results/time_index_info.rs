@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local, FixedOffset};
-use crate::results::DBResult;
+use crate::results::{DBResult, Elided};
 use sqlx::query::Query;
 use sqlx::MySql;
 use sqlx::mysql::MySqlArguments;
@@ -76,6 +76,7 @@ impl DBResult for TimeIndexInfo {
     fn query(where_part: Option<String>) -> Vec<Box<Self>> {
         unimplemented!()
     }
+
 }
 
 impl Display for TimeIndexBaseInfo {

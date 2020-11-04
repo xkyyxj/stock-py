@@ -1,7 +1,9 @@
 use super::DBResult;
-use sqlx::MySql;
-use sqlx::mysql::MySqlArguments;
+use sqlx::{MySql, Row};
+use sqlx::mysql::{MySqlArguments, MySqlRow};
 use sqlx::query::Query;
+use crate::sql;
+use crate::results::Elided;
 
 //TODO 这里面的东西可以再拆分一下，太乱了
 
@@ -26,8 +28,8 @@ pub struct MaxWin {
 }
 
 pub struct StockBaseInfo {
-    pub(crate) trade_date: Option<String>,
-    pub(crate) ts_code: Option<String>,
+    pub(crate) trade_date: String,
+    pub(crate) ts_code: String,
     pub(crate) open: f64,
     pub(crate) close: f64,
     pub(crate) high: f64,
@@ -74,11 +76,27 @@ impl DBResult for InLow {
     }
 }
 
+fn process_single_row(row: &MySqlRow) -> StockBaseInfo {
+    let mut temp_rst = StockBaseInfo::new();
+    let mut temp_str: String = row.get("ts_code");
+    temp_rst.ts_code = temp_str;
+    temp_rst.high = row.get("high");
+    temp_rst.low = row.get("low");
+    temp_rst.open = row.get("open");
+    temp_rst.close = row.get("close");
+    temp_rst.vol = row.get("vol");
+    temp_rst.amount = row.get("amount");
+    temp_rst.change = row.get("change");
+    temp_rst.pct_chg = row.get("pct_chg");
+    temp_rst.pre_close = row.get("pre_close");
+    temp_rst
+}
+
 impl DBResult for StockBaseInfo {
     fn new() -> Self {
         StockBaseInfo {
-            trade_date: None,
-            ts_code: None,
+            trade_date: "".to_string(),
+            ts_code: "".to_string(),
             open: 0.0,
             close: 0.0,
             high: 0.0,
@@ -99,9 +117,18 @@ impl DBResult for StockBaseInfo {
         unimplemented!()
     }
 
-    fn query(where_part: Option<String>) -> Vec<Box<StockBaseInfo>> {
-        // TODO -- finish it
-        unimplemented!()
+    fn query(where_part: Option<String>) -> Vec<Box<Self>> {
+        let mut final_sql = String::from("select * from history_down ");
+        final_sql = super::process_where_part(final_sql, where_part);
+
+        let mut final_rst = Vec::<Box<Self>>::new();
+        sql::common_query(final_sql.as_ref(), |rows| {
+            for row in rows {
+                final_rst.push(Box::<Self>::new(process_single_row(row)));
+            }
+        });
+        final_rst
     }
+
 }
 

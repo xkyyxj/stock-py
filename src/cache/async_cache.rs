@@ -1,5 +1,6 @@
 use redis::{AsyncCommands, ToRedisArgs, FromRedisValue};
 use redis::aio::Connection;
+use futures::executor;
 
 pub struct AsyncRedisOperation {
     connection: Connection,
