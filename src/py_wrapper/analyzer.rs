@@ -37,10 +37,10 @@ impl HistoryDownAna {
         let (mut tx, mut rx) = mpsc::channel::<String>(4000);
         let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
         tokio_runtime.spawn(history_down_wrapper(tx));
-        while let val = rx.next() {
-            let str: String = val.
-            val1.call0();
-        }
+        // while let val = rx.next() {
+        //     let str: String = val.
+        //     val1.call0();
+        // }
         self.is_started = true;
     }
 }
