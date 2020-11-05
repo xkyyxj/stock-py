@@ -13,6 +13,8 @@ use redis::aio::Connection;
 
 pub(crate) static INDEX_SUFFIX: &str = "_index";
 
+pub(crate) struct ATime(pub [u32;1]);
+
 /// 获取股票的实时信息
 pub async fn fetch_index_info(stock_code: Vec<String>) {
     let mut redis_ope = AsyncRedisOperation::new().await;
