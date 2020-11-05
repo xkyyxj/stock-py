@@ -43,6 +43,7 @@ use std::ops::Add;
 use futures::future::{Future, BoxFuture};
 use redis::{AsyncCommands, Commands};
 use crate::time::fetch_index_info;
+use crate::utils::show_win_toast;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -201,16 +202,17 @@ fn init() {
 // }
 
 fn main() {
-    let mut map = HashMap::<String, String>::new();
-    map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
-    map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
-    initialize::init(map);
-    let ts_codes = vec![String::from("000001.SZ")];
-    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-    let join_handler = tokio_runtime.spawn(fetch_index_info(ts_codes));
-    executor::block_on(async {
-        join_handler.await;
-    });
+    show_win_toast(String::from("123"), String::from("hehedada"));
+    // let mut map = HashMap::<String, String>::new();
+    // map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
+    // map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
+    // initialize::init(map);
+    // let ts_codes = vec![String::from("000001.SZ")];
+    // let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
+    // let join_handler = tokio_runtime.spawn(fetch_index_info(ts_codes));
+    // executor::block_on(async {
+    //     join_handler.await;
+    // });
     // test_aysnc1();
     // let temp_future = async {
     //     let mut async_conn = redis_client.get_async_connection().await.unwrap();
