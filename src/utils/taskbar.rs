@@ -12,14 +12,16 @@ use std::os::windows::prelude::*;
 use std::os::windows::ffi::OsStrExt;
 
 static CLASS_NAME: &str = "Taskbar01";
+
+/// windows工具栏，主要是用于显示通知中心的通知
 #[cfg(windows)]
-pub struct WinToast {
-    module_handler: HMODULE,
-    class_handler: HWND,
-    icon_id: u32,
+#[derive(Debug)]
+pub struct Taskbar {
+    module_handler: u32,
+    class_handler: u32,
 }
 
-impl WinToast {
+impl Taskbar {
     #[cfg(windows)]
     pub(crate) fn new() -> Self {
         unsafe {
@@ -75,17 +77,17 @@ impl WinToast {
                 println!("Add failed");
             }
 
-            WinToast { module_handler: _module, class_handler: hwnd, icon_id: WM_USER + 20 }
+            Taskbar { module_handler: _module as u32, class_handler: hwnd as u32 }
 
         }
     }
 
     #[cfg(windows)]
-    pub(crate) fn show_win_toast(&mut self, title: String, content: String) {
+    pub(crate) fn show_win_toast(&self, title: String, content: String) {
         unsafe {
             let title_ptr: Vec<u16> = OsStr::new(title.as_str()).encode_wide().chain(once(0)).collect();
             let content_p: Vec<u16> = OsStr::new(content.as_str()).encode_wide().chain(once(0)).collect();
-            let icon = LoadIconW(self.module_handler, IDI_APPLICATION);
+            let icon = LoadIconW(self.module_handler as HMODULE, IDI_APPLICATION);
             let mut content_arr:[u16; 256] = [0; 256];
             for i in 0..content_p.len() {
                 content_arr[i] = content_p[i];
@@ -103,14 +105,13 @@ impl WinToast {
 
             let mut params = NOTIFYICONDATAW::default();
             params.cbSize = mem::size_of::<NOTIFYICONDATAW>() as u32;
-            params.hWnd = self.class_handler;
+            params.hWnd = self.class_handler as HWND;
             params.szInfo = content_arr;
             params.szInfoTitle = title_arr;
             params.szTip = tip_arr;
             params.hIcon = icon;
             let flags = NIF_ICON | NIF_TIP;
-            params.uID = self.icon_id;
-            params.u = NOTIFYICONDATAW_u{ 0: [1] };
+            params.uID = WM_USER + 20;
             let flags = NIF_ICON | NIF_TIP;
             params.uFlags = flags;
             params.uFlags = NIF_INFO;
@@ -123,18 +124,18 @@ impl WinToast {
     }
 }
 
-impl Drop for WinToast {
+impl Drop for Taskbar {
     #[cfg(windows)]
     fn drop(&mut self) {
         unsafe {
             let mut params = NOTIFYICONDATAW::default();
             params.cbSize = mem::size_of::<NOTIFYICONDATAW>() as u32;
-            params.hWnd = self.class_handler;
+            params.hWnd = self.class_handler as HWND;
             Shell_NotifyIconW(NIM_MODIFY,&mut params);
 
             let class_name: Vec<u16> = OsStr::new(CLASS_NAME).encode_wide().chain(once(0)).collect();
-            DestroyWindow(self.class_handler);
-            UnregisterClassW(class_name.as_ptr(), self.module_handler);
+            DestroyWindow(self.class_handler as HWND);
+            UnregisterClassW(class_name.as_ptr(), self.module_handler as HMODULE);
         }
     }
 }

@@ -43,7 +43,7 @@ use std::ops::Add;
 use futures::future::{Future, BoxFuture};
 use redis::{AsyncCommands, Commands};
 use crate::time::fetch_index_info;
-use crate::utils::{show_win_toast, WinToast};
+use crate::utils::{Taskbar};
 use std::thread;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
@@ -205,7 +205,7 @@ fn init() {
 fn main() {
     // show_win_toast(String::from("123"), String::from("hehedada"));
 
-    let mut toast = WinToast::new();
+    let mut toast = Taskbar::new();
     let ten_millis2 = std::time::Duration::from_secs(5);
     thread::sleep(ten_millis2);
     toast.show_win_toast(String::from("您有新的待选股票啦"), String::from("hehedada"));

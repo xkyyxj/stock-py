@@ -8,7 +8,7 @@ use futures::channel::mpsc;
 use futures::channel::mpsc::Sender;
 use futures::StreamExt;
 
-async fn history_down_wrapper(sender: Sender<String>) {
+async fn history_down_wrapper() {
     let mut real_analyzer = HistoryDownAnalyzer::new();
     real_analyzer.analyze().await;
 }
@@ -34,13 +34,8 @@ impl HistoryDownAna {
             return
         }
         let val1 = args.get_item(0);
-        let (mut tx, mut rx) = mpsc::channel::<String>(4000);
         let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        tokio_runtime.spawn(history_down_wrapper(tx));
-        // while let val = rx.next() {
-        //     let str: String = val.
-        //     val1.call0();
-        // }
+        tokio_runtime.spawn(history_down_wrapper());
         self.is_started = true;
     }
 }

@@ -49,8 +49,10 @@ impl HistoryDownAnalyzer {
     }
 
     pub(crate) async fn analyze(&mut self) {
+        let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
         let curr_time_str = crate::utils::time_utils::curr_date_str("%Y%m%d");
         loop {
+            let mut wait_select_stock = String::new();
             let curr_time = Local::now();
             let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             for item in &self.history_down_vos {
@@ -75,7 +77,7 @@ impl HistoryDownAnalyzer {
                     level = level + 1;
                 }
 
-                let temp_ts_code = String::from(&item.ts_code);
+                let mut temp_ts_code = String::from(&item.ts_code);
                 if let Some(last_day_info) = self.last_day_info.get(temp_ts_code.as_str()) {
                     if real_last_info.curr_price > last_day_info.high {
                         level = level + 1;
@@ -90,10 +92,11 @@ impl HistoryDownAnalyzer {
                     rst.in_price = real_last_info.curr_price;
                     rst.level = level;
                     sql::insert(&mut conn, rst).await;
+
+                    temp_ts_code = String::from(&item.ts_code);
+                    wait_select_stock = wait_select_stock + temp_ts_code.as_str() + ", ";
                 }
             }
-
-            // callback();
 
             // 每两秒获取一次
             let two_seconds_duration = Duration::seconds(crate::config::INDEX_INFO_FETCH_DELTA);
@@ -102,6 +105,11 @@ impl HistoryDownAnalyzer {
             let real_sleep_time = two_seconds_duration - fetch_cost_time;
             if real_sleep_time.num_nanoseconds().unwrap() > 0 {
                 sleep(real_sleep_time.to_std().unwrap()).await;
+            }
+            // 任务栏弹出提示通知消息
+            if wait_select_stock.len() > 0 {
+                println!("历史低值区间股票有了！！！！");
+                taskbar.show_win_toast(String::from("新的待选股票!"), wait_select_stock);
             }
         }
     }
