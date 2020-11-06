@@ -208,9 +208,9 @@ fn main() {
     let mut toast = WinToast::new();
     let ten_millis2 = std::time::Duration::from_secs(5);
     thread::sleep(ten_millis2);
-    toast.show_win_toast(String::from("123"), String::from("hehedada"));
+    toast.show_win_toast(String::from("您有新的待选股票啦"), String::from("hehedada"));
 
-    let ten_millis3 = std::time::Duration::from_secs(5);
+    let ten_millis3 = std::time::Duration::from_secs(10);
     thread::sleep(ten_millis3);
     toast.show_win_toast(String::from("6666"), String::from("7777"));
     let ten_millis = std::time::Duration::from_secs(30);

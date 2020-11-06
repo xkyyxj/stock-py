@@ -3,7 +3,7 @@ use winapi::_core::iter::once;
 use winapi::um::libloaderapi::GetModuleHandleW;
 use winapi::_core::{ptr, mem};
 use winapi::um::winuser::{WS_SYSMENU, WS_OVERLAPPED, IDI_APPLICATION, LoadIconW, WNDCLASSEXW, DefWindowProcW, RegisterClassExW, CreateWindowExW, CW_USEDEFAULT, UpdateWindow, DestroyWindow, UnregisterClassW, WM_USER};
-use winapi::um::shellapi::{NOTIFYICONDATAW, NIF_ICON, NIF_TIP, Shell_NotifyIconW, NIM_ADD, NIM_MODIFY, NIIF_INFO, NIF_INFO};
+use winapi::um::shellapi::{NOTIFYICONDATAW, NOTIFYICONDATAW_u, NIF_ICON, NIF_TIP, Shell_NotifyIconW, NIM_ADD, NIM_MODIFY, NIIF_INFO, NIF_INFO, NIM_DELETE};
 use std::{thread, time};
 use winapi::shared::minwindef::HMODULE;
 use winapi::shared::windef::HWND;
@@ -25,28 +25,29 @@ impl WinToast {
         unsafe {
             let null_str: Vec<u16> = OsStr::new("555").encode_wide().chain(once(0)).collect();
             let class_name: Vec<u16> = OsStr::new(CLASS_NAME).encode_wide().chain(once(0)).collect();
-            let hinst = GetModuleHandleW(ptr::null());
+            let _module = GetModuleHandleW(ptr::null());
             let style = WS_OVERLAPPED | WS_SYSMENU;
-            let icon = LoadIconW(hinst, IDI_APPLICATION);
+            let icon = LoadIconW(_module, IDI_APPLICATION);
             let mut wc = WNDCLASSEXW::default();
             // 原先报错可能是因为下面这一行
             wc.cbSize = mem::size_of::<WNDCLASSEXW>() as u32;
-            wc.hInstance = hinst;
+            wc.hInstance = _module;
             wc.lpszClassName = class_name.as_ptr();
             wc.hIcon = icon;
             wc.style = 0;
             wc.cbWndExtra = 0;
+            wc.hIconSm = icon;
             wc.lpfnWndProc = Some(DefWindowProcW);
             let class_atom = RegisterClassExW(&wc);
             // class_atom as u32
             let hwnd = CreateWindowExW(0, wc.lpszClassName, null_str.as_ptr(), style, 0, 0, CW_USEDEFAULT,
                                        CW_USEDEFAULT,
-                                       ptr::null_mut(), ptr::null_mut(), hinst, ptr::null_mut());
+                                       ptr::null_mut(), ptr::null_mut(), _module, ptr::null_mut());
             UpdateWindow(hwnd);
 
             let title_ptr: Vec<u16> = OsStr::new("").encode_wide().chain(once(0)).collect();
             let content_p: Vec<u16> = OsStr::new("").encode_wide().chain(once(0)).collect();
-            let icon = LoadIconW(hinst, IDI_APPLICATION);
+            let icon = LoadIconW(_module, IDI_APPLICATION);
             let mut content_arr:[u16; 256] = [0; 256];
             for i in 0..content_p.len() {
                 content_arr[i] = content_p[i];
@@ -69,11 +70,12 @@ impl WinToast {
             params.szTip = tip_arr;
             params.hIcon = icon;
             params.uID = WM_USER + 20;
-            // if Shell_NotifyIconW(NIM_ADD, &mut params) == 0 {
-            //     println!("Add failed");
-            // }
+            params.u = NOTIFYICONDATAW_u{ 0: [1] };
+            if Shell_NotifyIconW(NIM_ADD, &mut params) == 0 {
+                println!("Add failed");
+            }
 
-            WinToast { module_handler: hinst, class_handler: hwnd, icon_id: WM_USER + 20 }
+            WinToast { module_handler: _module, class_handler: hwnd, icon_id: WM_USER + 20 }
 
         }
     }
@@ -107,19 +109,17 @@ impl WinToast {
             params.szTip = tip_arr;
             params.hIcon = icon;
             let flags = NIF_ICON | NIF_TIP;
-            params.uID = WM_USER + 20;
+            params.uID = self.icon_id;
+            params.u = NOTIFYICONDATAW_u{ 0: [1] };
             let flags = NIF_ICON | NIF_TIP;
             params.uFlags = flags;
-            if Shell_NotifyIconW(NIM_ADD, &mut params) == 0 {
-                println!("Add failed");
-            }
             params.uFlags = NIF_INFO;
             params.dwInfoFlags = NIIF_INFO;
+            // FIXME -- 此处只有当上一次弹出的气泡提示框消失之后，下一次的修正才会真正在消息中心添加一个新的消息
             if Shell_NotifyIconW(NIM_MODIFY,&mut params) == 0 {
                 println!("modi failed");
             }
         }
-        self.icon_id = self.icon_id + 1;
     }
 }
 
@@ -127,6 +127,11 @@ impl Drop for WinToast {
     #[cfg(windows)]
     fn drop(&mut self) {
         unsafe {
+            let mut params = NOTIFYICONDATAW::default();
+            params.cbSize = mem::size_of::<NOTIFYICONDATAW>() as u32;
+            params.hWnd = self.class_handler;
+            Shell_NotifyIconW(NIM_MODIFY,&mut params);
+
             let class_name: Vec<u16> = OsStr::new(CLASS_NAME).encode_wide().chain(once(0)).collect();
             DestroyWindow(self.class_handler);
             UnregisterClassW(class_name.as_ptr(), self.module_handler);
