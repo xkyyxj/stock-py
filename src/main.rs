@@ -43,7 +43,8 @@ use std::ops::Add;
 use futures::future::{Future, BoxFuture};
 use redis::{AsyncCommands, Commands};
 use crate::time::fetch_index_info;
-use crate::utils::show_win_toast;
+use crate::utils::{show_win_toast, WinToast};
+use std::thread;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -202,7 +203,18 @@ fn init() {
 // }
 
 fn main() {
-    show_win_toast(String::from("123"), String::from("hehedada"));
+    // show_win_toast(String::from("123"), String::from("hehedada"));
+
+    let mut toast = WinToast::new();
+    let ten_millis2 = std::time::Duration::from_secs(5);
+    thread::sleep(ten_millis2);
+    toast.show_win_toast(String::from("123"), String::from("hehedada"));
+
+    let ten_millis3 = std::time::Duration::from_secs(5);
+    thread::sleep(ten_millis3);
+    toast.show_win_toast(String::from("6666"), String::from("7777"));
+    let ten_millis = std::time::Duration::from_secs(30);
+    thread::sleep(ten_millis);
     // let mut map = HashMap::<String, String>::new();
     // map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
     // map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));

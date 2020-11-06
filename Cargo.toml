@@ -21,6 +21,8 @@ hyper = "0.13"
 encoding = "0.2.33"
 redis = { version = "0.17.0", features = ["tokio-comp"] }
 flate2 = { version = "1.0.17", features = ["zlib-ng-compat"], default-features = false }
+
+[target.'cfg(windows)'.dependencies]
 winapi = { vresion = "0.3.9", features = ['shellapi', 'winuser', 'libloaderapi', 'wingdi', 'windef', 'impl-default'] }
 
 [dependencies.pyo3]
