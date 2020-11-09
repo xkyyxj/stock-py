@@ -29,11 +29,10 @@ impl HistoryDownAna {
 
     #[call]
     #[args(args="*")]
-    pub(crate) fn __call__(&mut self, args: &PyTuple){
+    pub(crate) fn __call__(&mut self){
         if self.is_started {
             return
         }
-        let val1 = args.get_item(0);
         let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
         tokio_runtime.spawn(history_down_wrapper());
         self.is_started = true;

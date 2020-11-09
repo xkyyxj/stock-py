@@ -34,6 +34,14 @@ impl AsyncRedisOperation {
         }
     }
 
+    pub(crate) async fn exists(&mut self, key: String) -> bool {
+        self.connection.exists(key).await.unwrap()
+    }
+
+    pub(crate) async fn append_str(&mut self, key: String, value: String){
+        let _: () = self.connection.append(key, value).await.unwrap();
+    }
+
     pub(crate) async fn delete<K>(&mut self, key: K)
         where K: ToRedisArgs + Sync + Send {
         let _: () = self.connection.del(key).await.unwrap();

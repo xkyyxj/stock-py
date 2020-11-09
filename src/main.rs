@@ -45,6 +45,8 @@ use redis::{AsyncCommands, Commands};
 use crate::time::fetch_index_info;
 use crate::utils::{Taskbar};
 use std::thread;
+use crate::py_wrapper::{HistoryDownAna, TimeFetcher};
+use crate::analyzer::HistoryDownAnalyzer;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -204,27 +206,33 @@ fn init() {
 
 fn main() {
     // show_win_toast(String::from("123"), String::from("hehedada"));
+    // let mut toast = Taskbar::new();
+    // let ten_millis2 = std::time::Duration::from_secs(2);
+    // thread::sleep(ten_millis2);
+    // toast.show_win_toast(String::from("您有新的待选股票啦"), String::from("hehedada"));
+    //
+    // let ten_millis3 = std::time::Duration::from_secs(2);
+    // thread::sleep(ten_millis3);
+    // toast.show_win_toast(String::from("6666"), String::from("7777"));
+    // let ten_millis = std::time::Duration::from_secs(30);
+    // thread::sleep(ten_millis);
 
-    let mut toast = Taskbar::new();
-    let ten_millis2 = std::time::Duration::from_secs(5);
-    thread::sleep(ten_millis2);
-    toast.show_win_toast(String::from("您有新的待选股票啦"), String::from("hehedada"));
-
-    let ten_millis3 = std::time::Duration::from_secs(10);
-    thread::sleep(ten_millis3);
-    toast.show_win_toast(String::from("6666"), String::from("7777"));
-    let ten_millis = std::time::Duration::from_secs(30);
-    thread::sleep(ten_millis);
-    // let mut map = HashMap::<String, String>::new();
-    // map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
-    // map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
-    // initialize::init(map);
+    let mut map = HashMap::<String, String>::new();
+    map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
+    map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
+    initialize::init(map);
     // let ts_codes = vec![String::from("000001.SZ")];
     // let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-    // let join_handler = tokio_runtime.spawn(fetch_index_info(ts_codes));
+    // let join_handler = tokio_runtime.spawn(async{
+    //     let mut history_down = HistoryDownAnalyzer::new();
+    //     history_down.analyze().await;
+    // });
     // executor::block_on(async {
     //     join_handler.await;
     // });
+    let mut time_fetcher = TimeFetcher{ is_started: false };
+    time_fetcher.__call__();
+    sleep(Duration::from_secs(2000));
     // test_aysnc1();
     // let temp_future = async {
     //     let mut async_conn = redis_client.get_async_connection().await.unwrap();

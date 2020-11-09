@@ -48,9 +48,6 @@ async fn calculate_in_low_s(mut conn: PoolConnection<MySql>,
 
         let mut in_low = InLow::new();
         in_low.ts_code = Some(String::from(&item));
-        if let Some(name_str) = code2name_map.get(&item) {
-            in_low.ts_name = Some(String::from(name_str));
-        };
 
         in_low.date = Some(String::from(&curr_date_str));
         in_low.in_price = all_vos[all_vos.len() - 1].close;

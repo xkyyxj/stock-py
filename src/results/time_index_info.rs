@@ -256,3 +256,16 @@ impl TimeIndexInfo {
     }
 }
 
+impl Display for TimeIndexInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}~",
+               self.t_open, self.y_close, self.curr_price, self.t_max, self.t_min,
+               self.buy_price[0], self.buy_price[1], self.buy_price[2], self.buy_price[3],
+               self.buy_price[4], self.sold_price[0], self.sold_price[1], self.sold_price[2],
+               self.sold_price[3], self.sold_price[4], self.buy_num[0], self.buy_num[1],
+               self.buy_num[2], self.buy_num[3], self.buy_num[4], self.sold_num[0],
+               self.sold_num[1], self.sold_num[2], self.sold_num[3], self.sold_num[4],
+               self.curr_time)
+    }
+}
+

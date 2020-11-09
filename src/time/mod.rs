@@ -157,30 +157,47 @@ async fn process_single_info(content: String, redis_ope: &mut AsyncRedisOperatio
     // 从redis当中获取到相关的数据，然后拼接，存储到redis当中
     let mut redis_key = String::from(&single_info.ts_code);
     redis_key = redis_key.add(INDEX_SUFFIX);
-    match redis_ope.get::<String, String>(redis_key).await {
-        Some(str) => {
-            let mut output_str = String::from(&str);
-            let mut index_batch_info = Box::new(TimeIndexBatchInfo::from(str));
-            if let Some(last_info) = index_batch_info.get_last_info() {
-                // 最后获取到的信息和上次获取到的信息一样的话，就不用存储了，节省点缓存
-                if *last_info == single_info.get_base_info() {
-                    return
-                }
-            }
-            index_batch_info.add_single_info(&single_info);
-            let mut write_str = index_batch_info.to_string();
-            output_str = String::from(&write_str);
-            redis_key = String::from(&single_info.ts_code);
-            redis_key = redis_key.add(INDEX_SUFFIX);
-            redis_ope.set::<String, String>(redis_key, write_str).await;
-        },
-        None => {
-            let mut index_batch_info = TimeIndexBatchInfo::new();
-            index_batch_info.add_single_info(&single_info);
-            let mut write_str = index_batch_info.to_string();
-            redis_key = String::from(&single_info.ts_code);
-            redis_key = redis_key.add(INDEX_SUFFIX);
-            redis_ope.set::<String, String>(redis_key, write_str).await;
-        }
+
+    if redis_ope.exists(redis_key).await {
+        let write_str = single_info.to_string();
+        redis_key = String::from(&single_info.ts_code);
+        redis_key = redis_key.add(INDEX_SUFFIX);
+        redis_ope.append_str(redis_key, write_str).await;
     }
+    else {
+        let mut index_batch_info = TimeIndexBatchInfo::new();
+        index_batch_info.add_single_info(&single_info);
+        let mut write_str = index_batch_info.to_string();
+        redis_key = String::from(&single_info.ts_code);
+        redis_key = redis_key.add(INDEX_SUFFIX);
+        redis_ope.set::<String, String>(redis_key, write_str).await;
+    }
+
+    // 下面这种方案经验证，太过于耗费CPU，所有换种方式（就是上面那种方式）
+    // match redis_ope.get::<String, String>(redis_key).await {
+    //     Some(str) => {
+    //         let mut output_str = String::from(&str);
+    //         let mut index_batch_info = Box::new(TimeIndexBatchInfo::from(str));
+    //         if let Some(last_info) = index_batch_info.get_last_info() {
+    //             // 最后获取到的信息和上次获取到的信息一样的话，就不用存储了，节省点缓存
+    //             if *last_info == single_info.get_base_info() {
+    //                 return
+    //             }
+    //         }
+    //         index_batch_info.add_single_info(&single_info);
+    //         let mut write_str = index_batch_info.to_string();
+    //         output_str = String::from(&write_str);
+    //         redis_key = String::from(&single_info.ts_code);
+    //         redis_key = redis_key.add(INDEX_SUFFIX);
+    //         // redis_ope.set::<String, String>(redis_key, write_str).await;
+    //     },
+    //     None => {
+    //         let mut index_batch_info = TimeIndexBatchInfo::new();
+    //         index_batch_info.add_single_info(&single_info);
+    //         let mut write_str = index_batch_info.to_string();
+    //         redis_key = String::from(&single_info.ts_code);
+    //         redis_key = redis_key.add(INDEX_SUFFIX);
+    //         // redis_ope.set::<String, String>(redis_key, write_str).await;
+    //     }
+    // }
 }

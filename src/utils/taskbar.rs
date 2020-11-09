@@ -114,7 +114,7 @@ impl Taskbar {
             params.uID = WM_USER + 20;
             let flags = NIF_ICON | NIF_TIP;
             params.uFlags = flags;
-            params.uFlags = NIF_INFO;
+            params.uFlags = NIF_ICON | NIF_TIP | NIF_INFO;
             params.dwInfoFlags = NIIF_INFO;
             // FIXME -- 此处只有当上一次弹出的气泡提示框消失之后，下一次的修正才会真正在消息中心添加一个新的消息
             if Shell_NotifyIconW(NIM_MODIFY,&mut params) == 0 {

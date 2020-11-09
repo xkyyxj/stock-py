@@ -2,6 +2,7 @@ mod calculate_low;
 mod calculate_big_wave;
 mod calculate_max_win;
 mod calculate_history_down;
+mod calculate_steady;
 
 pub use calculate_low::calculate_in_low;
 pub use calculate_max_win::calculate_max_win;

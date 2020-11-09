@@ -10,7 +10,6 @@ use crate::results::Elided;
 pub struct InLow {
     pub(crate) pk_low: i32,
     pub(crate) ts_code: Option<String>,
-    pub(crate) ts_name: Option<String>,
     pub(crate) date: Option<String>,
     pub(crate) in_price: f64
 }
@@ -46,14 +45,13 @@ impl DBResult for InLow {
         InLow {
             pk_low: 0,
             ts_code: None,
-            ts_name: None,
             date: None,
             in_price: 0f64
         }
     }
 
     fn insert(&self) -> Query<'_, MySql, MySqlArguments> {
-        sqlx::query("insert into in_low(ts_code, ts_name, date, in_price) values(?,?,?,?)")
+        sqlx::query("insert into in_low(ts_code, date, in_price) values(?,?,?)")
     }
 
     fn bind<'a>(&'a self, mut query: Query<'a, MySql, MySqlArguments>) -> Query<'a, MySql, MySqlArguments> {
@@ -65,7 +63,6 @@ impl DBResult for InLow {
         // t_str = String::from(&self.date.unwrap());
         // query.bind(t_str)
         query = query.bind(self.ts_code.as_ref());
-        query = query.bind(self.ts_name.as_ref());
         query = query.bind(self.date.as_ref());
         query.bind(self.in_price)
     }
