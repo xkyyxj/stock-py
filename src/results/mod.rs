@@ -27,7 +27,7 @@ pub trait DBResult {
 
 fn process_where_part(mut final_sql: String, where_part: Option<String>) -> String {
     if let Some(val) = where_part {
-        if val.contains("where") {
+        if val.starts_with("where") {
             final_sql = final_sql + " " + val.as_str();
         } else {
             final_sql = final_sql + " where ";

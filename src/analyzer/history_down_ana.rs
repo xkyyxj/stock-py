@@ -5,11 +5,14 @@ use crate::sql;
 use async_std::task::sleep;
 use chrono::{Duration, Local};
 use futures::executor;
+use crate::analyzer::SleepDuringStop;
 
 pub struct HistoryDownAnalyzer {
     redis_ope: AsyncRedisOperation,
     history_down_vos: Vec<Box<HistoryDown>>,
-    last_day_info: HashMap<String, Box<StockBaseInfo>>
+    last_day_info: HashMap<String, Box<StockBaseInfo>>,
+    sleep_check: SleepDuringStop,
+    already_in_wait: Vec<String>
 }
 
 impl HistoryDownAnalyzer {
@@ -20,7 +23,9 @@ impl HistoryDownAnalyzer {
         let mut ret_data = HistoryDownAnalyzer {
             redis_ope,
             history_down_vos: vec![],
-            last_day_info: Default::default()
+            last_day_info: Default::default(),
+            sleep_check: SleepDuringStop::new(),
+            already_in_wait: vec![]
         };
         ret_data.initialize();
         ret_data
@@ -31,6 +36,15 @@ impl HistoryDownAnalyzer {
     }
 
     pub(crate) fn refresh_data(&mut self) {
+        // 第一步：查询那些股票已经进入到了待选当中了
+        let curr_time_str = crate::utils::time_utils::curr_date_str("%Y%m%d");
+        let mut in_wait_where = String::from("in_date='");
+        in_wait_where = in_wait_where + curr_time_str.as_str() + "'";
+        let all_in_wait = WaitSelect::query(Some(in_wait_where));
+        for item in all_in_wait {
+            self.already_in_wait.push(String::from(item.ts_code));
+        }
+
         // 更新一下昨天的history_down数据
         let history_down_where = String::from("where in_date=(select in_date from history_down order by in_date desc limit 1)");
         let all_vos = HistoryDown::query(Some(history_down_where));
@@ -49,11 +63,13 @@ impl HistoryDownAnalyzer {
     }
 
     pub(crate) async fn analyze(&mut self) {
+        let analyze_time_delta = crate::initialize::CONFIG_INFO.get().unwrap().analyze_time_delta;
         let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
         let curr_time_str = crate::utils::time_utils::curr_date_str("%Y%m%d");
         loop {
-            let mut wait_select_stock = String::new();
             let curr_time = Local::now();
+            self.sleep_check.check_sleep(&curr_time).await;
+            let mut wait_select_stock = String::new();
             let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             for item in &self.history_down_vos {
                 // 第一步：从Redis缓存当中取出当前的实时数据，判定是否当前价格是否高于昨天的最高价
@@ -84,13 +100,15 @@ impl HistoryDownAnalyzer {
                     }
                 }
 
-                if level > 0 {
+                // 如果没有加入到待选当中才会将其加入到待选当中
+                if level > 0 && !self.already_in_wait.contains(&temp_ts_code) {
                     let mut rst = WaitSelect::new();
                     rst.ts_code = temp_ts_code;
                     rst.in_reason = String::from("历史低值实时反弹");
                     rst.in_date = String::from(String::from(&curr_time_str));
                     rst.in_price = real_last_info.curr_price;
                     rst.level = level;
+                    self.already_in_wait.push(String::from(&rst.ts_code));
                     sql::insert(&mut conn, rst).await;
 
                     temp_ts_code = String::from(&item.ts_code);
@@ -99,7 +117,7 @@ impl HistoryDownAnalyzer {
             }
 
             // 每两秒获取一次
-            let two_seconds_duration = Duration::seconds(crate::config::INDEX_INFO_FETCH_DELTA);
+            let two_seconds_duration = Duration::seconds(analyze_time_delta);
             let fetch_finish_time = Local::now();
             let fetch_cost_time = fetch_finish_time - curr_time;
             let real_sleep_time = two_seconds_duration - fetch_cost_time;

@@ -75,17 +75,16 @@ impl DBResult for InLow {
 
 fn process_single_row(row: &MySqlRow) -> StockBaseInfo {
     let mut temp_rst = StockBaseInfo::new();
-    let mut temp_str: String = row.get("ts_code");
-    temp_rst.ts_code = temp_str;
-    temp_rst.high = row.get("high");
-    temp_rst.low = row.get("low");
-    temp_rst.open = row.get("open");
-    temp_rst.close = row.get("close");
-    temp_rst.vol = row.get("vol");
-    temp_rst.amount = row.get("amount");
-    temp_rst.change = row.get("change");
-    temp_rst.pct_chg = row.get("pct_chg");
-    temp_rst.pre_close = row.get("pre_close");
+    temp_rst.ts_code = row.get("ts_code");
+    temp_rst.high = row.get::<'_, f64, &str>("high");
+    temp_rst.low = row.get::<'_, f64, &str>("low");
+    temp_rst.open = row.get::<'_, f64, &str>("open");
+    temp_rst.close = row.get::<'_, f64, &str>("close");
+    temp_rst.vol = row.get::<'_, f64, &str>("vol");
+    temp_rst.amount = row.get::<'_, f64, &str>("amount");
+    temp_rst.change = row.get::<'_, f64, &str>("change");
+    temp_rst.pct_chg = row.get::<'_, f64, &str>("pct_chg");
+    temp_rst.pre_close = row.get::<'_, f64, &str>("pre_close");
     temp_rst
 }
 
@@ -115,7 +114,7 @@ impl DBResult for StockBaseInfo {
     }
 
     fn query(where_part: Option<String>) -> Vec<Box<Self>> {
-        let mut final_sql = String::from("select * from history_down ");
+        let mut final_sql = String::from("select * from stock_base_info ");
         final_sql = super::process_where_part(final_sql, where_part);
 
         let mut final_rst = Vec::<Box<Self>>::new();

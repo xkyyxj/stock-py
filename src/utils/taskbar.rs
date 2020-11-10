@@ -89,11 +89,19 @@ impl Taskbar {
             let content_p: Vec<u16> = OsStr::new(content.as_str()).encode_wide().chain(once(0)).collect();
             let icon = LoadIconW(self.module_handler as HMODULE, IDI_APPLICATION);
             let mut content_arr:[u16; 256] = [0; 256];
-            for i in 0..content_p.len() {
+            let mut min_last_index = content_p.len();
+            if min_last_index > 256 {
+                min_last_index = 256;
+            }
+            for i in 0..min_last_index {
                 content_arr[i] = content_p[i];
             }
             let mut title_arr:[u16; 64] = [0; 64];
-            for i in 0..title_ptr.len() {
+            min_last_index = title_ptr.len();
+            if min_last_index > 64 {
+                min_last_index = 64;
+            }
+            for i in 0..min_last_index {
                 title_arr[i] = title_ptr[i];
             }
             let mut tip_arr: [u16; 128] = [0; 128];

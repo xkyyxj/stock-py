@@ -13,8 +13,6 @@ use redis::aio::Connection;
 
 pub(crate) static INDEX_SUFFIX: &str = "_index";
 
-pub(crate) struct ATime(pub [u32;1]);
-
 /// 获取股票的实时信息
 pub async fn fetch_index_info(stock_code: Vec<String>) {
     let mut redis_ope = AsyncRedisOperation::new().await;
@@ -76,6 +74,8 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
         // 上午到下午之间的间歇，休眠
         if curr_time > _up_end_time && curr_time <= _down_begin_time {
             let temp_duration = (_down_begin_time - _up_end_time).to_std().unwrap();
+            // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
+            del_cache(&stock_code, &mut redis_ope).await;
             sleep(temp_duration).await;
         }
 

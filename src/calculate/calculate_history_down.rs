@@ -18,10 +18,15 @@ pub async fn calculate_history_down() -> bool {
 }
 
 /// 单条股票计算是否是历史低值区间
-/// 上榜条件：
+/// 上榜条件：往前推200天，最后一天的价格比200天之内的最低价不高于5%
+/// TODO -- 可以添加如下内容：
+/// 1. MA金叉
+/// 2.
 async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
                             stock_codes: Vec<String>, mut tx: Sender<u32>,
                             code2name_map: HashMap<String, String>) {
+    let last_days = crate::initialize::CONFIG_INFO.get().unwrap().min_history_down_days;
+    let min_up_pct = crate::initialize::CONFIG_INFO.get().unwrap().min_history_down_up_pct;
     let date_time = Local::now();
     let curr_date_str = date_time.format("%Y%m%d").to_string();
     for item in stock_codes {
@@ -44,7 +49,7 @@ async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
         for i in 0..all_vos.len() {
             let temp_close = all_vos[all_vos.len() - i - 1].close;
             delta_pct = (last_day_close - temp_close) / temp_close;
-            if delta_pct < crate::config::MIN_HISTORY_DOWN_UP_PCT {
+            if delta_pct < min_up_pct {
                 delta_days = delta_days + 1;
                 his_down_price = temp_close;
             }
@@ -52,7 +57,7 @@ async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
                 break;
             }
         }
-        if delta_days < crate::config::MIN_HISTORY_DOWN_DAYS {
+        if delta_days < last_days {
             continue;
         }
         history_down.ts_code = item;

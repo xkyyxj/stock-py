@@ -38,7 +38,7 @@ use std::str::FromStr;
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
-use crate::results::DBResult;
+use crate::results::{DBResult, HistoryDown, StockBaseInfo};
 use std::ops::Add;
 use futures::future::{Future, BoxFuture};
 use redis::{AsyncCommands, Commands};
@@ -230,8 +230,16 @@ fn main() {
     // executor::block_on(async {
     //     join_handler.await;
     // });
+
+    // 测试获取实时信息
     let mut time_fetcher = TimeFetcher{ is_started: false };
-    time_fetcher.__call__();
+    time_fetcher.clear();
+    // let mut history_down_ana = HistoryDownAna { is_started: false };
+    // history_down_ana.__call__();
+
+    // 测试查询history_down
+    // let rst1 = StockBaseInfo::query(Some("ts_code='000001.SZ'".parse().unwrap()));
+    // let rst = HistoryDown::query(None);
     sleep(Duration::from_secs(2000));
     // test_aysnc1();
     // let temp_future = async {

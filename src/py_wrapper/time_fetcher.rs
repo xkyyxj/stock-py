@@ -3,6 +3,7 @@ use crate::time::fetch_index_info;
 use futures::executor;
 use pyo3::prelude::*;
 use sqlx::Row;
+use crate::cache::AsyncRedisOperation;
 
 // 每个线程负责拉取的股票数量
 static EACH_THREAD_FETCH_NUM: usize = 330;
@@ -43,5 +44,19 @@ impl TimeFetcher {
         }
 
         self.is_started = true;
+    }
+
+    /// 清空redis缓存
+    pub(crate) fn clear(&self) {
+        let columns = vec!["ts_code"];
+        executor::block_on(async {
+            let mut redis_ope = AsyncRedisOperation::new().await;
+            let all_rows = sql::query_stock_list(&columns, " where market in ('主板', '中小板')").await.unwrap();
+            for item in &all_rows {
+                let mut ts_code: String = item.get("ts_code");
+                ts_code = ts_code + crate::time::INDEX_SUFFIX;
+                redis_ope.delete(ts_code).await;
+            }
+        });
     }
 }

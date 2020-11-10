@@ -19,12 +19,10 @@ fn process_single_row_for_history_down(row: &MySqlRow) -> HistoryDown {
     let mut temp_rst = HistoryDown::new();
     let mut temp_str: String = row.get("ts_code");
     temp_rst.ts_code = temp_str;
-    let mut temp_float: f64 = row.get("his_down_price");
-    temp_rst.his_down_price = temp_float;
-    temp_float = row.get("in_price");
-    temp_rst.in_price = row.get("in_price");
-    temp_rst.delta_pct = row.get("delta_pct");
-    temp_rst.history_len = row.get("history_len");
+    temp_rst.his_down_price = row.get::<'_, f64, &str>("his_down_price");
+    temp_rst.in_price = row.get::<'_, f64, &str>("in_price");
+    temp_rst.delta_pct = row.get::<'_, f64, &str>("delta_pct");
+    temp_rst.history_len = row.get::<'_, i64, &str>("history_len");
     temp_rst.in_date = row.get("in_date");
     temp_rst.pk_history_down = row.get("pk_history_down");
     temp_rst

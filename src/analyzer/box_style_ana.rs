@@ -5,11 +5,13 @@ use crate::sql;
 use async_std::task::sleep;
 use chrono::{Duration, Local};
 use futures::executor;
+use crate::analyzer::SleepDuringStop;
 
 pub struct BoxStyleAnalyzer {
     redis_ope: AsyncRedisOperation,
     box_style_vos: Vec<Box<BoxStyle>>,
-    last_day_info: HashMap<String, Box<StockBaseInfo>>
+    last_day_info: HashMap<String, Box<StockBaseInfo>>,
+    sleep_check: SleepDuringStop
 }
 
 impl BoxStyleAnalyzer {
@@ -20,7 +22,8 @@ impl BoxStyleAnalyzer {
         let mut ret_data = BoxStyleAnalyzer {
             redis_ope,
             box_style_vos: vec![],
-            last_day_info: Default::default()
+            last_day_info: Default::default(),
+            sleep_check: SleepDuringStop::new()
         };
         ret_data.initialize();
         ret_data
@@ -54,6 +57,7 @@ impl BoxStyleAnalyzer {
         loop {
             let mut wait_select_stock = String::new();
             let curr_time = Local::now();
+            self.sleep_check.check_sleep(&curr_time).await;
             let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             for item in &self.box_style_vos {
                 // 第一步：从Redis缓存当中取出当前的实时数据，判定是否当前价格是否高于昨天的最高价
