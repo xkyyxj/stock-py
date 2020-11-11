@@ -10,7 +10,7 @@ mod wait_select;
 mod box_style;
 
 pub use result::{ StockBaseInfo, InLow };
-pub use time_index_info::{ TimeIndexInfo, TimeIndexBatchInfo };
+pub use time_index_info::{ TimeIndexInfo, TimeIndexBaseInfo, TimeIndexBatchInfo };
 pub use history_down::HistoryDown;
 pub use box_style::BoxStyle;
 pub use wait_select::WaitSelect;

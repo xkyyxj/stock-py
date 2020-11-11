@@ -68,27 +68,29 @@ impl HistoryDownAnalyzer {
         let curr_time_str = crate::utils::time_utils::curr_date_str("%Y%m%d");
         loop {
             let curr_time = Local::now();
-            self.sleep_check.check_sleep(&curr_time).await;
+            //self.sleep_check.check_sleep(&curr_time).await;
             let mut wait_select_stock = String::new();
             let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             for item in &self.history_down_vos {
                 // 第一步：从Redis缓存当中取出当前的实时数据，判定是否当前价格是否高于昨天的最高价
-                let mut redis_key = String::from(&item.ts_code);
-                redis_key = redis_key + crate::time::INDEX_SUFFIX;
-                let index_info = self.redis_ope.get::<String, String>(redis_key).await;
-                if let None = index_info {
-                    continue;
-                }
-
-                let str = index_info.unwrap();
-                let real_batch_index: TimeIndexBatchInfo = str.into();
-                let last_info = real_batch_index.get_last_info();
+                // let mut redis_key = String::from(&item.ts_code);
+                // redis_key = redis_key + crate::time::INDEX_SUFFIX;
+                // let index_info = self.redis_ope.get::<String, String>(redis_key).await;
+                // if let None = index_info {
+                //     continue;
+                // }
+                //
+                // let str = index_info.unwrap();
+                // let real_batch_index: TimeIndexBatchInfo = str.into();
+                let last_info = super::get_last_index_info_from_redis(
+                    &mut self.redis_ope, &item.ts_code).await;
                 if let None = last_info {
                     continue;
                 }
 
                 let mut level: i64 = 0;
                 let real_last_info = last_info.unwrap();
+                println!("last info open is {}, time is {}", real_last_info.t_open, real_last_info.curr_time);
                 if real_last_info.curr_price > real_last_info.y_close {
                     level = level + 1;
                 }

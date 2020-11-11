@@ -46,5 +46,23 @@ impl AsyncRedisOperation {
         where K: ToRedisArgs + Sync + Send {
         let _: () = self.connection.del(key).await.unwrap();
     }
+
+    pub(crate) async fn str_length<K>(&mut self, key: K) -> isize
+        where K: ToRedisArgs + Sync + Send {
+        self.connection.strlen(key).await.unwrap()
+    }
+
+    pub(crate) async fn get_range<K, RV>(&mut self, key: K, start: isize, end: isize) -> Option<RV>
+        where K: ToRedisArgs + Sync + Send,
+              RV: FromRedisValue {
+        match self.connection.getrange(key, start, end).await {
+            Ok(val) => {
+                Some(val)
+            },
+            Err(_) => {
+                None
+            }
+        }
+    }
 }
 

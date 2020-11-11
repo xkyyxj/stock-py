@@ -6,7 +6,7 @@ use chrono::Duration;
 use hyper::body::Buf;
 use encoding::{DecoderTrap, Encoding};
 use encoding::all::GBK;
-use crate::results::{TimeIndexInfo, TimeIndexBatchInfo, DBResult};
+use crate::results::{TimeIndexInfo, TimeIndexBaseInfo, TimeIndexBatchInfo, DBResult};
 use std::str::FromStr;
 use crate::cache::AsyncRedisOperation;
 use redis::aio::Connection;
@@ -40,7 +40,7 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
     // 当前天上午开盘时间(上午9:29:59)
     let mut _up_begin_time = Local.ymd(year, month, day).and_hms_milli(9, 29, 59, 0);
     // 当前天上午闭盘时间(上午11:59:59)
-    let mut _up_end_time = Local.ymd(year, month, day).and_hms_milli(11, 59, 59, 0);
+    let mut _up_end_time = Local.ymd(year, month, day).and_hms_milli(11, 29, 59, 0);
     // 当前天下午开盘时间(上午12:59:59)
     let mut _down_begin_time = Local.ymd(year, month, day).and_hms_milli(12, 59, 59, 0);
     // 当前天下午闭盘时间(上午14:59:59)
@@ -160,6 +160,27 @@ async fn process_single_info(content: String, redis_ope: &mut AsyncRedisOperatio
 
     if redis_ope.exists(redis_key).await {
         let write_str = single_info.to_string();
+        // 增加一点小判定，耗费点CPU，节省点内存，反正rust的tokio够快
+        redis_key = String::from(&single_info.ts_code);
+        redis_key = redis_key.add(INDEX_SUFFIX);
+        let mut start = length - 800;
+        if start < 0 {
+            start = 0;
+        }
+        redis_key = String::from(ts_code);
+        redis_key = redis_key + INDEX_SUFFIX;
+        let ret_str = redis_ope.get_range::<String, String>(redis_key, start, length).await.unwrap();
+        // 处理一下字符串，获取到最新的实时信息
+        let temp_infos: Vec<&str> = ret_str.split('~').collect();
+        if !temp_infos.is_empty() {
+            let last_info_str = String::from(*temp_infos.get(temp_infos.len() - 2).unwrap());
+            let last_index_info: TimeIndexBaseInfo = last_info_str.into();
+            // 如果两者相等的话，那么就不用在添加到缓存里面了
+            if last_index_info == single_info.get_base_info() {
+                return;
+            }
+        }
+
         redis_key = String::from(&single_info.ts_code);
         redis_key = redis_key.add(INDEX_SUFFIX);
         redis_ope.append_str(redis_key, write_str).await;

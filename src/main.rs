@@ -232,10 +232,11 @@ fn main() {
     // });
 
     // 测试获取实时信息
-    let mut time_fetcher = TimeFetcher{ is_started: false };
-    time_fetcher.clear();
-    // let mut history_down_ana = HistoryDownAna { is_started: false };
-    // history_down_ana.__call__();
+    // let mut time_fetcher = TimeFetcher{ is_started: false };
+    // time_fetcher.clear();
+    // time_fetcher.__call__();
+    let mut history_down_ana = HistoryDownAna { is_started: false };
+    history_down_ana.__call__();
 
     // 测试查询history_down
     // let rst1 = StockBaseInfo::query(Some("ts_code='000001.SZ'".parse().unwrap()));
