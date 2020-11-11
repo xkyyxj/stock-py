@@ -90,7 +90,6 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             del_cache(&stock_code, &mut redis_ope).await;
             sleep(temp_duration).await;
         }
-
     }
 }
 
@@ -163,16 +162,17 @@ async fn process_single_info(content: String, redis_ope: &mut AsyncRedisOperatio
         // 增加一点小判定，耗费点CPU，节省点内存，反正rust的tokio够快
         redis_key = String::from(&single_info.ts_code);
         redis_key = redis_key.add(INDEX_SUFFIX);
+        let length = redis_ope.str_length::<String>(redis_key).await;
         let mut start = length - 800;
         if start < 0 {
             start = 0;
         }
-        redis_key = String::from(ts_code);
+        redis_key = String::from(&single_info.ts_code);
         redis_key = redis_key + INDEX_SUFFIX;
         let ret_str = redis_ope.get_range::<String, String>(redis_key, start, length).await.unwrap();
         // 处理一下字符串，获取到最新的实时信息
         let temp_infos: Vec<&str> = ret_str.split('~').collect();
-        if !temp_infos.is_empty() {
+        if temp_infos.len() > 2 {
             let last_info_str = String::from(*temp_infos.get(temp_infos.len() - 2).unwrap());
             let last_index_info: TimeIndexBaseInfo = last_info_str.into();
             // 如果两者相等的话，那么就不用在添加到缓存里面了
