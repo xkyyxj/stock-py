@@ -15,6 +15,8 @@ pub(crate) static INDEX_SUFFIX: &str = "_index";
 
 /// 获取股票的实时信息
 pub async fn fetch_index_info(stock_code: Vec<String>) {
+    // 知道为什么println!不生效么？可能因为多个线程同时竞争了，导致打印有问题！！！
+    // println!("6666666666666666！！！！！！！");
     let mut redis_ope = AsyncRedisOperation::new().await;
     // 构建查询的URL地址
     let mut target_string = String::from("http://hq.sinajs.cn/list=");
@@ -73,7 +75,7 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
 
         // 上午到下午之间的间歇，休眠
         if curr_time > _up_end_time && curr_time <= _down_begin_time {
-            let temp_duration = (_down_begin_time - _up_end_time).to_std().unwrap();
+            let temp_duration = (_down_begin_time - curr_time).to_std().unwrap();
             // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
             del_cache(&stock_code, &mut redis_ope).await;
             sleep(temp_duration).await;
@@ -164,7 +166,9 @@ async fn process_single_info(content: String, redis_ope: &mut AsyncRedisOperatio
         redis_key = redis_key.add(INDEX_SUFFIX);
         let length = redis_ope.str_length::<String>(redis_key).await;
         let mut start = length - 800;
-        if start < 0 {
+        // FIXME -- 此处有一个redis模块(依赖的redis模块，而不是redis服务器)的BUG：如果get_range的start的index正好位于中文字符串的中间，就不能成功返回数据了，此处修正一下
+        // FIXME -- 如果start_index小于150，直接到0，这样能够避免这个问题吧，毕竟中文只在开头有
+        if start < 150 {
             start = 0;
         }
         redis_key = String::from(&single_info.ts_code);

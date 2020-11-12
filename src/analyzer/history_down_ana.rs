@@ -90,7 +90,6 @@ impl HistoryDownAnalyzer {
 
                 let mut level: i64 = 0;
                 let real_last_info = last_info.unwrap();
-                println!("last info open is {}, time is {}", real_last_info.t_open, real_last_info.curr_time);
                 if real_last_info.curr_price > real_last_info.y_close {
                     level = level + 1;
                 }

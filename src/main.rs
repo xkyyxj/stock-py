@@ -10,7 +10,7 @@ mod initialize;
 mod py_wrapper;
 mod utils;
 
-use chrono::{DateTime, Local, FixedOffset};
+use chrono::{DateTime, Local, FixedOffset, TimeZone};
 
 
 
@@ -42,11 +42,12 @@ use crate::results::{DBResult, HistoryDown, StockBaseInfo};
 use std::ops::Add;
 use futures::future::{Future, BoxFuture};
 use redis::{AsyncCommands, Commands};
-use crate::time::fetch_index_info;
+use crate::time::{fetch_index_info, INDEX_SUFFIX};
 use crate::utils::{Taskbar};
 use std::thread;
 use crate::py_wrapper::{HistoryDownAna, TimeFetcher};
 use crate::analyzer::HistoryDownAnalyzer;
+use crate::cache::AsyncRedisOperation;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -224,8 +225,26 @@ fn main() {
     // let ts_codes = vec![String::from("000001.SZ")];
     // let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
     // let join_handler = tokio_runtime.spawn(async{
-    //     let mut history_down = HistoryDownAnalyzer::new();
-    //     history_down.analyze().await;
+    //     // let mut history_down = HistoryDownAnalyzer::new();
+    //     // history_down.analyze().await;
+    //     let year= 2020;
+    //     let month = 11;
+    //     let day = 12;
+    //     let mut _up_begin_time = Local.ymd(year, month, day).and_hms_milli(9, 29, 59, 0);
+    //     // 当前天上午闭盘时间(上午11:59:59)
+    //     let mut _up_end_time = Local.ymd(year, month, day).and_hms_milli(11, 29, 59, 0);
+    //     // 当前天下午开盘时间(上午12:59:59)
+    //     let mut _down_begin_time = Local.ymd(year, month, day).and_hms_milli(12, 59, 59, 0);
+    //     let curr_time = Local::now();
+    //     println!("curr time is {}", curr_time);
+    //     if curr_time > _up_end_time && curr_time <= _down_begin_time {
+    //         let temp_duration = (_down_begin_time - curr_time).to_std().unwrap();
+    //         // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
+    //         println!("in here!!!!!!!{}", temp_duration.as_secs());
+    //         //del_cache(&stock_code, &mut redis_ope).await;
+    //         sleep(temp_duration).await;
+    //     }
+    //     println!("hahhahahahahhhahah");
     // });
     // executor::block_on(async {
     //     join_handler.await;

@@ -40,6 +40,7 @@ impl TimeFetcher {
                 tokio_runtime.spawn(fetch_index_info(each_thread_codes));
                 each_thread_codes = Vec::<String>::with_capacity(EACH_THREAD_FETCH_NUM);
                 count = 0;
+                break;
             }
         }
 

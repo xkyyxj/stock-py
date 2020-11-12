@@ -72,7 +72,9 @@ pub async fn get_last_index_info_from_redis(redis_ope: &mut AsyncRedisOperation,
         let length = redis_ope.str_length::<String>(redis_key).await;
         // FIXME -- 此处写死了一个值，似乎单条的信息不会超过800吧
         let mut start = length - 800;
-        if start < 0 {
+        // FIXME -- 此处有一个redis模块(依赖的redis模块，而不是redis服务器)的BUG：如果get_range的start的index正好位于中文字符串的中间，就不能成功返回数据了，此处修正一下
+        // FIXME -- 如果start_index小于150，直接到0，这样能够避免这个问题吧，毕竟中文只在开头有
+        if start < 150 {
             start = 0;
         }
         redis_key = String::from(ts_code);
