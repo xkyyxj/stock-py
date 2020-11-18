@@ -73,23 +73,37 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             }
         }
 
+        // 早上未开盘之前，休眠
+        if curr_time < _up_begin_time {
+            let temp_duration = (_up_begin_time - curr_time).to_std().unwrap();
+            del_cache(&stock_code, &mut redis_ope);
+            sleep(temp_duration).await;
+        }
+
         // 上午到下午之间的间歇，休眠
         if curr_time > _up_end_time && curr_time <= _down_begin_time {
             let temp_duration = (_down_begin_time - curr_time).to_std().unwrap();
             // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
-            del_cache(&stock_code, &mut redis_ope).await;
+            // del_cache(&stock_code, &mut redis_ope).await;
             sleep(temp_duration).await;
         }
 
         // 到了第二天，呵呵哒哒
         if curr_time > _down_end_time {
+            // 午夜三点左右，删除前一天的redis缓存吧
+            let del_redis_duration = Duration::hours(12);
+            let next_three_morning = _down_end_time + del_redis_duration;
+            let mut temp_duration = (next_three_morning - curr_time).to_std().unwrap();
+            sleep(temp_duration).await;
+            del_cache(&stock_code, &mut redis_ope).await;
+
+            let after_del_time = Local::now();
             let next_day_duration = Duration::hours(24);
             _up_begin_time = _up_begin_time.add(next_day_duration);
-            let temp_duration = (_up_begin_time - _down_end_time).to_std().unwrap();
+            temp_duration = (_up_begin_time - after_del_time).to_std().unwrap();
             _up_end_time = _up_end_time.add(next_day_duration);
             _down_begin_time = _down_begin_time.add(next_day_duration);
             _down_end_time = _down_end_time.add(next_day_duration);
-            del_cache(&stock_code, &mut redis_ope).await;
             sleep(temp_duration).await;
         }
     }
@@ -97,7 +111,9 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
 
 async fn del_cache(ts_codes: &Vec<String>, redis_ope: &mut AsyncRedisOperation) {
     for item in ts_codes {
-        redis_ope.delete(item.as_str()).await;
+        println!("delete item {}", item);
+        let redis_key = String::from(item) + INDEX_SUFFIX;
+        redis_ope.delete(redis_key).await;
     }
 }
 

@@ -45,8 +45,15 @@ impl SleepDuringStop {
             return;
         }
         else {
+            // 早上未开盘之前，休眠
+            if curr_time < &self._up_begin_time {
+                let temp_duration = (self._up_begin_time - *curr_time).to_std().unwrap();
+                sleep(temp_duration).await;
+            }
+
+            // 午休休盘时间，睡眠
             if curr_time > &self._up_end_time && curr_time <= &self._down_begin_time {
-                let temp_duration = (self._down_begin_time - self._up_end_time).to_std().unwrap();
+                let temp_duration = (self._down_begin_time - *curr_time).to_std().unwrap();
                 sleep(temp_duration).await;
             }
 

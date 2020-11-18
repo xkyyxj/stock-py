@@ -8,6 +8,7 @@ mod calculate;
 mod cache;
 mod analyzer;
 mod utils;
+mod simulate;
 
 use pyo3::prelude::*;
 use pyo3::{wrap_pyfunction};

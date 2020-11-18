@@ -7,6 +7,7 @@ use crate::results::{ HistoryDown, DBResult };
 use std::collections::HashMap;
 use chrono::Local;
 
+/// 坚实基础理论：低值，估价偏低，巴菲特宣传的思想对吧
 pub async fn calculate_history_down() -> bool {
     fn temp(mut conn: PoolConnection<MySql>,
             stock_codes: Vec<String>, mut tx: Sender<u32>,

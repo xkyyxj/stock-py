@@ -3,10 +3,12 @@ mod calculate_big_wave;
 mod calculate_max_win;
 mod calculate_history_down;
 mod calculate_steady;
+mod calculate_air_castle;
 
 pub use calculate_low::calculate_in_low;
 pub use calculate_max_win::calculate_max_win;
 pub use calculate_history_down::calculate_history_down;
+pub use calculate_air_castle::calculate_air_castle;
 use crate::sql;
 use std::collections::HashMap;
 use futures::channel::mpsc;

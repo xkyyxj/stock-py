@@ -8,12 +8,14 @@ mod history_down;
 mod time_index_info;
 mod wait_select;
 mod box_style;
+mod air_castle;
 
 pub use result::{ StockBaseInfo, InLow };
 pub use time_index_info::{ TimeIndexInfo, TimeIndexBaseInfo, TimeIndexBatchInfo };
 pub use history_down::HistoryDown;
 pub use box_style::BoxStyle;
 pub use wait_select::WaitSelect;
+pub use air_castle::AirCastle;
 
 type Elided<'a> = &'a usize;
 

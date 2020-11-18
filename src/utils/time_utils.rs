@@ -18,5 +18,5 @@ pub fn curr_date_before_days(days: i64) -> DateTime<Local> {
 
 pub fn curr_date_before_days_str(days: i64, format: &str) -> String {
     let date_time = curr_date_before_days(days);
-    date_time.format("%Y%m%d").to_string()
+    date_time.format(format).to_string()
 }

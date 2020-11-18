@@ -7,6 +7,7 @@ use crate::results::{ InLow, DBResult };
 use std::collections::HashMap;
 use chrono::Local;
 
+/// DEPRECATE -- 似乎和history_down有冲突，所以说这个可以暂时废弃了
 pub async fn calculate_in_low() -> bool {
     fn temp(mut conn: PoolConnection<MySql>,
             stock_codes: Vec<String>, mut tx: Sender<u32>,

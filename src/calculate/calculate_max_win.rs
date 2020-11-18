@@ -6,6 +6,7 @@ use chrono::Local;
 use crate::sql;
 use crate::utils::time_utils;
 
+/// 纯粹好奇一下，最近一段时间内获利最多的股票都有谁
 pub async fn calculate_max_win() -> bool {
     fn temp(mut conn: PoolConnection<MySql>,
             stock_codes: Vec<String>, mut tx: Sender<u32>,

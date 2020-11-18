@@ -17,6 +17,12 @@ pub(crate) static INDEX_INFO_FETCH_DELTA: i64 = 3;
 /// 分析程序分析时间间隔(秒钟)
 pub(crate) static ANALYZE_TIME_DELTA: i64 = 4;
 
+/// 空中楼阁理论：上涨了多少算作是已经开启上涨了
+pub(crate) static AIR_CASTLE_UP_PCT: f64 = 0.15;
+
+/// 空中楼阁理论：连续多少天上涨了才算开启上涨了
+pub(crate) static AIR_CASTLE_UP_DAYS: i64 = 5;
+
 #[derive(Debug)]
 pub struct Config {
     pub(crate) mysql_max_connection: usize,
@@ -25,6 +31,8 @@ pub struct Config {
     pub(crate) min_history_down_up_pct: f64,
     pub(crate) index_info_fetch_delta: i64,
     pub(crate) analyze_time_delta: i64,
+    pub(crate) air_castle_up_pct: f64,
+    pub(crate) air_castle_up_days: i64,
 }
 
 impl Config {
@@ -35,7 +43,9 @@ impl Config {
             min_history_down_days: MIN_HISTORY_DOWN_DAYS,
             min_history_down_up_pct: MIN_HISTORY_DOWN_UP_PCT,
             index_info_fetch_delta: INDEX_INFO_FETCH_DELTA,
-            analyze_time_delta: ANALYZE_TIME_DELTA
+            analyze_time_delta: ANALYZE_TIME_DELTA,
+            air_castle_up_pct: AIR_CASTLE_UP_PCT,
+            air_castle_up_days: AIR_CASTLE_UP_DAYS
         }
     }
 
