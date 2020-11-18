@@ -82,7 +82,7 @@ impl HistoryDownAnalyzer {
                 //
                 // let str = index_info.unwrap();
                 // let real_batch_index: TimeIndexBatchInfo = str.into();
-                let last_info = super::get_last_index_info_from_redis(
+                let last_info = crate::cache::get_last_index_info_from_redis(
                     &mut self.redis_ope, &item.ts_code).await;
                 if let None = last_info {
                     continue;

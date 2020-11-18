@@ -9,6 +9,7 @@ mod analyzer;
 mod initialize;
 mod py_wrapper;
 mod utils;
+mod selector;
 
 use chrono::{DateTime, Local, FixedOffset, TimeZone};
 

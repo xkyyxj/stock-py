@@ -9,6 +9,8 @@ mod cache;
 mod analyzer;
 mod utils;
 mod simulate;
+mod indicators;
+mod selector;
 
 use pyo3::prelude::*;
 use pyo3::{wrap_pyfunction};
