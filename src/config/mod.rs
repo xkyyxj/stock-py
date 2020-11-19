@@ -23,6 +23,9 @@ pub(crate) static AIR_CASTLE_UP_PCT: f64 = 0.15;
 /// 空中楼阁理论：连续多少天上涨了才算开启上涨了
 pub(crate) static AIR_CASTLE_UP_DAYS: i64 = 5;
 
+/// 无意之中通过python的ema模拟发现，其实ema指标可以实现盈利，当时是用的3，此处也用3吧
+pub(crate) static EMA_SELECT_DEFAULT_LENGTH: i64 = 3;
+
 #[derive(Debug)]
 pub struct Config {
     pub(crate) mysql_max_connection: usize,
@@ -33,6 +36,7 @@ pub struct Config {
     pub(crate) analyze_time_delta: i64,
     pub(crate) air_castle_up_pct: f64,
     pub(crate) air_castle_up_days: i64,
+    pub(crate) ema_select_length: i64,
 }
 
 impl Config {
@@ -45,7 +49,8 @@ impl Config {
             index_info_fetch_delta: INDEX_INFO_FETCH_DELTA,
             analyze_time_delta: ANALYZE_TIME_DELTA,
             air_castle_up_pct: AIR_CASTLE_UP_PCT,
-            air_castle_up_days: AIR_CASTLE_UP_DAYS
+            air_castle_up_days: AIR_CASTLE_UP_DAYS,
+            ema_select_length: EMA_SELECT_DEFAULT_LENGTH
         }
     }
 
