@@ -42,7 +42,7 @@ impl SelectResult {
     /// 两个结果的合并，得分的简单相加
     pub(crate) fn merge(&mut self, other: &SelectResult) {
         for self_item in &mut self.select_rst {
-            for other_item in other.select_rst {
+            for other_item in &other.select_rst {
                 if self_item.ts_code == other_item.ts_code {
                     self_item.level = self_item.level + other_item.level;
                     if self_item.level > 100 {

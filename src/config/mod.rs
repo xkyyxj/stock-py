@@ -23,8 +23,12 @@ pub(crate) static AIR_CASTLE_UP_PCT: f64 = 0.15;
 /// 空中楼阁理论：连续多少天上涨了才算开启上涨了
 pub(crate) static AIR_CASTLE_UP_DAYS: i64 = 5;
 
-/// 无意之中通过python的ema模拟发现，其实ema指标可以实现盈利，当时是用的3，此处也用3吧
-pub(crate) static EMA_SELECT_DEFAULT_LENGTH: i64 = 3;
+/// ema短期选股需要用到的参数
+/// 无意之中通过python的ema模拟发现，其实ema指标可以实现盈利，当时是用的5，此处也用5吧
+pub(crate) static EMA_SELECT_DEFAULT_LENGTH: i64 = 5;
+
+/// 当EMA连续多少天上涨之后就决定买入！！
+pub(crate) static EMA_SELECT_UP_DAYS: i64 = 3;
 
 #[derive(Debug)]
 pub struct Config {
@@ -37,6 +41,7 @@ pub struct Config {
     pub(crate) air_castle_up_pct: f64,
     pub(crate) air_castle_up_days: i64,
     pub(crate) ema_select_length: i64,
+    pub(crate) ema_select_up_days: i64,
 }
 
 impl Config {
@@ -50,7 +55,8 @@ impl Config {
             analyze_time_delta: ANALYZE_TIME_DELTA,
             air_castle_up_pct: AIR_CASTLE_UP_PCT,
             air_castle_up_days: AIR_CASTLE_UP_DAYS,
-            ema_select_length: EMA_SELECT_DEFAULT_LENGTH
+            ema_select_length: EMA_SELECT_DEFAULT_LENGTH,
+            ema_select_up_days: EMA_SELECT_UP_DAYS
         }
     }
 

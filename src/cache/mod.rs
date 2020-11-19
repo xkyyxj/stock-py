@@ -3,7 +3,7 @@ mod async_index_ope;
 
 use redis::Commands;
 pub use async_cache::AsyncRedisOperation;
-pub use async_index_ope::get_last_index_info_from_redis;
+pub use async_index_ope::{ get_last_index_info_from_redis, get_num_last_index_info_redis };
 
 pub fn set(_key: &str, _content: &str) {
     // let client = crate::initialize::REDIS_POOL.get().unwrap();

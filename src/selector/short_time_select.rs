@@ -1,5 +1,5 @@
 use crate::results::TimeIndexBaseInfo;
-use crate::selector::ema_select::{ema_select, ema_select_wrapper};
+use crate::selector::ema_select::{EMASelect};
 use futures::Future;
 use std::pin::Pin;
 
@@ -14,6 +14,8 @@ impl ShortTimeSelect {
     }
 
     pub(crate) async fn select(&self) {
+        loop {
 
+        }
     }
 }
