@@ -51,6 +51,7 @@ use crate::py_wrapper::{HistoryDownAna, TimeFetcher};
 use crate::analyzer::HistoryDownAnalyzer;
 use crate::cache::AsyncRedisOperation;
 use crate::calculate::calculate_air_castle;
+use crate::selector::ShortTimeSelect;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -256,7 +257,14 @@ fn main() {
     // executor::block_on(async {
     //     join_handler.await;
     // });
-    air_castle_cal();
+    // air_castle_cal();
+
+    // 尝试select
+    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
+    tokio_runtime.spawn(async {
+        let selector = ShortTimeSelect::new();
+        selector.select().await;
+    });
 
     // 测试获取实时信息
     // let mut time_fetcher = TimeFetcher{ is_started: false };
