@@ -5,8 +5,9 @@ use crate::sql;
 use async_std::task::sleep;
 use chrono::{Duration, Local};
 use futures::executor;
-use crate::analyzer::SleepDuringStop;
+use crate::utils::time_utils::SleepDuringStop;
 
+/// TODO -- 可以把这个移动到select模块下面去
 pub struct HistoryDownAnalyzer {
     redis_ope: AsyncRedisOperation,
     history_down_vos: Vec<Box<HistoryDown>>,
@@ -68,7 +69,7 @@ impl HistoryDownAnalyzer {
         let curr_time_str = crate::utils::time_utils::curr_date_str("%Y%m%d");
         loop {
             let curr_time = Local::now();
-            //self.sleep_check.check_sleep(&curr_time).await;
+            self.sleep_check.check_sleep(&curr_time).await;
             let mut wait_select_stock = String::new();
             let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             for item in &self.history_down_vos {

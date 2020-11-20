@@ -6,6 +6,10 @@ use crate::sql;
 use std::collections::HashMap;
 use sqlx::Row;
 use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
+use crate::selector::{SelectResult, SingleSelectResult};
+use std::sync::mpsc::Sender;
+
+static EAM_LEVEL_PCT: f64 = 0.5;
 
 pub struct EMAAnaInfo {
     last_ema_value: f64,
@@ -14,7 +18,7 @@ pub struct EMAAnaInfo {
 
 pub struct EMASelect {
     backup_codes: Vec<String>,
-    selected_codes: Vec<String>,
+    selected_rst: SelectResult,
     code2name_map: HashMap<String, String>,
     code2ana_info_map: HashMap<String, EMAAnaInfo>,
     redis_ope: AsyncRedisOperation,
@@ -24,7 +28,7 @@ impl EMASelect {
     pub(crate) async fn new() -> Self {
         EMASelect {
             backup_codes: vec![],
-            selected_codes: vec![],
+            selected_rst: SelectResult::new(),
             code2name_map: Default::default(),
             code2ana_info_map: Default::default(),
             redis_ope: AsyncRedisOperation::new().await
@@ -32,6 +36,11 @@ impl EMASelect {
     }
 
     pub(crate) async fn initialize(&mut self) {
+        // 第负一步：清空以及获取初始化信息
+        self.backup_codes.clear();
+        self.selected_codes.clear();
+        self.code2ana_info_map.clear();
+        self.code2ana_info_map.clear();
         let config_info = crate::initialize::CONFIG_INFO.get().unwrap();
         // 第零步：查询出所有的股票列表
         let columns = vec!["ts_code", "name"];
@@ -80,7 +89,7 @@ impl EMASelect {
 
     /// 策略：获取最近的几条实时信息，如果是正处于下降过程当中的，那么就不加入到备选当中，如果是经历过拐点的，加入到备选当中
     /// 如果是一直处于上涨的过程当中，给个中等评分吧
-    pub(crate) async fn select(&mut self) {
+    pub(crate) async fn select(&mut self, tx: Sender<SelectResult>) {
         for item in &self.backup_codes {
             let temp_ts_code = String::from(item);
             let redis_info = get_num_last_index_info_redis(
@@ -99,6 +108,40 @@ impl EMASelect {
             }
 
             // TODO -- 待完善
+            let single_rst = SingleSelectResult{
+                ts_code: String::from(&temp_ts_code),
+                ts_name: String::from(self.code2name_map.get(temp_ts_code.as_str()).unwrap()),
+                level: 0,
+                source: String::from("EMA Select"),
+                level_pct: 0.0
+            };
+            self.judge_can_add(single_rst, line_type);
+            tx.send(self.selected_rst.clone());
+        }
+    }
+
+    fn judge_can_add(&mut self, mut single_rst: SingleSelectResult, up_state: i32) {
+        match up_state {
+            -1 => {
+                single_rst.level = 0;
+            },
+            0 => {
+                single_rst.level = 90;
+                self.selected_rst.add_selected(single_rst);
+            },
+            1 => {
+                single_rst.level = 10;
+                self.selected_rst.add_selected(single_rst);
+            },
+            2 => {
+                single_rst.level = 60;
+                self.selected_rst.add_selected(single_rst);
+            },
+            4 => {
+                single_rst.level = 40;
+                self.selected_rst.add_selected(single_rst);
+            },
+            _ => {}
         }
     }
 

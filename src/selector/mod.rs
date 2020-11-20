@@ -24,6 +24,18 @@ impl SingleSelectResult {
     }
 }
 
+impl Clone for SingleSelectResult {
+    fn clone(&self) -> Self {
+        SingleSelectResult {
+            ts_code: String::from(&self.ts_code),
+            ts_name: String::from(&self.ts_name),
+            level: self.level,
+            source: String::from(&self.source),
+            level_pct: self.level_pct
+        }
+    }
+}
+
 pub(crate) struct SelectResult {
     pub(crate) select_rst: Vec<SingleSelectResult>,
     pub(crate) ts: DateTime<Local>,
@@ -52,5 +64,18 @@ impl SelectResult {
             }
         }
         self.ts = Local::now();
+    }
+}
+
+impl Clone for SelectResult {
+    fn clone(&self) -> Self {
+        let mut vec: Vec<SingleSelectResult> = vec![];
+        for item in &self.select_rst {
+            vec.push(item.clone());
+        }
+        SelectResult {
+            select_rst: vec,
+            ts: self.ts.clone()
+        }
     }
 }
