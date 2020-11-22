@@ -38,7 +38,6 @@ impl EMASelect {
     pub(crate) async fn initialize(&mut self) {
         // 第负一步：清空以及获取初始化信息
         self.backup_codes.clear();
-        self.selected_codes.clear();
         self.code2ana_info_map.clear();
         self.code2ana_info_map.clear();
         let config_info = crate::initialize::CONFIG_INFO.get().unwrap();
@@ -90,7 +89,8 @@ impl EMASelect {
     /// 策略：获取最近的几条实时信息，如果是正处于下降过程当中的，那么就不加入到备选当中，如果是经历过拐点的，加入到备选当中
     /// 如果是一直处于上涨的过程当中，给个中等评分吧
     pub(crate) async fn select(&mut self, tx: Sender<SelectResult>) {
-        for item in &self.backup_codes {
+        for i in 0..self.backup_codes.len() {
+            let item = self.backup_codes.get(i).unwrap();
             let temp_ts_code = String::from(item);
             let redis_info = get_num_last_index_info_redis(
                 &mut self.redis_ope, &temp_ts_code, 5).await;
@@ -111,9 +111,11 @@ impl EMASelect {
             let single_rst = SingleSelectResult{
                 ts_code: String::from(&temp_ts_code),
                 ts_name: String::from(self.code2name_map.get(temp_ts_code.as_str()).unwrap()),
+                curr_price: pre_price,
                 level: 0,
                 source: String::from("EMA Select"),
-                level_pct: 0.0
+                level_pct: 0.0,
+                line_style: line_type
             };
             self.judge_can_add(single_rst, line_type);
             tx.send(self.selected_rst.clone());

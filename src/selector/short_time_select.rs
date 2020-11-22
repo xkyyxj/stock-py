@@ -1,6 +1,6 @@
 use crate::results::TimeIndexBaseInfo;
 use crate::selector::ema_select::{EMASelect};
-use futures::Future;
+use futures::{Future, executor};
 use std::pin::Pin;
 use crate::utils::time_utils::SleepDuringStop;
 use chrono::{Local, Duration};
@@ -26,7 +26,7 @@ impl ShortTimeSelect {
         self.ema_select.initialize().await;
     }
 
-    pub(crate) async fn select(&mut self) {
+    pub(crate) async fn select(&'static mut self) {
         // 第零步：获取初始化的配置信息
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let ana_delta_time = config.analyze_time_delta;
@@ -36,8 +36,10 @@ impl ShortTimeSelect {
             let (tx, rx) = mpsc::channel::<SelectResult>();
             let curr_time = Local::now();
             self.sleep_check.check_sleep(&curr_time).await;
-            tokio_runtime.spawn(self.ema_select.select(tx));
-
+            let join_handler = tokio_runtime.spawn(self.ema_select.select(tx));
+            executor::block_on(async {
+                join_handler.await;
+            });
             for received  in rx {
                 //
             }
@@ -50,7 +52,7 @@ impl ShortTimeSelect {
             if real_sleep_time.num_nanoseconds().unwrap() > 0 {
                 sleep(real_sleep_time.to_std().unwrap()).await;
             }
-            // 任务栏弹出提示通知消息
+            // 任务栏弹出提示通知消息(评分大于等于60就买入吧)
             // if wait_select_stock.len() > 0 {
             //     println!("EMA信号");
             //     taskbar.show_win_toast(String::from("EMA Select:"), wait_select_stock);
@@ -58,7 +60,8 @@ impl ShortTimeSelect {
         }
     }
 
-    fn process_ana_result(&mut self, result: SelectedResult) {
+    /// 处理策略：如果是
+    fn process_ana_result(&mut self, result: SelectResult) {
 
     }
 }

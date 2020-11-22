@@ -30,10 +30,10 @@ pub fn init(cx: HashMap<String, String>) {
     CONFIG_INFO.set(config_info).unwrap();
 
     // 初始化tokio运行时
-    let runtime = Builder::new()
-        .threaded_scheduler()
+    let runtime = Builder::new_multi_thread()
         .enable_all()
-        .core_threads(15)
+        // .worker_threads(4)
+        .max_threads(512)
         .thread_name("my-custom-name")
         .thread_stack_size(3 * 1024 * 1024)
         .build()
