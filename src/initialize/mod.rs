@@ -40,17 +40,6 @@ pub fn init(cx: HashMap<String, String>) {
         .unwrap();
     TOKIO_RUNTIME.set(runtime).unwrap();
 
-    // 初始化数据库连接池
-    let init_block = async {
-        let mut options = PoolOptions::<MySql>::new();
-        options = options.max_connections(config::MYSQL_MAX_CONNECTION as u32);
-        match options.connect(mysql_info.as_str()).await {
-            Ok(val) => { MYSQL_POOL.set(val).unwrap(); },
-            Err(_) => { final_rst = false; },
-        };
-    };
-    executor::block_on(init_block);
-
     // 初始化Redis连接池
     match redis::Client::open(redis_info.as_str()) {
         Ok(val) => { REDIS_POOL.set(val).unwrap(); },
@@ -60,4 +49,20 @@ pub fn init(cx: HashMap<String, String>) {
     // 初始化windows任务栏（不管了）
     TASKBAR_TOOL.set(Taskbar::new()).unwrap();
 
+    // 初始化数据库连接池
+    let tokio_runtime = TOKIO_RUNTIME.get().unwrap();
+    // tokio_runtime.block_on(init_block);
+    // tokio_runtime.spawn_blocking()
+    let join_handler = tokio_runtime.spawn(init_mysql_pool(String::from(mysql_info)));
+    executor::block_on(join_handler);
+
+}
+
+async fn init_mysql_pool(conn_info: String) {
+    let mut options = PoolOptions::<MySql>::new();
+    options = options.max_connections(config::MYSQL_MAX_CONNECTION as u32);
+    match options.connect(conn_info.as_str()).await {
+        Ok(val) => { MYSQL_POOL.set(val).unwrap(); },
+        Err(_) => {  },
+    };
 }
