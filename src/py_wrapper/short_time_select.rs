@@ -7,8 +7,6 @@ use crate::cache::AsyncRedisOperation;
 use once_cell::sync::OnceCell;
 use crate::selector::ShortTimeSelect;
 
-static short_time_select: OnceCell<ShortTimeSelect> = OnceCell::new();
-
 #[pyclass]
 pub struct ShortTimeStrategy {
     pub(crate) is_started: bool,
@@ -17,9 +15,7 @@ pub struct ShortTimeStrategy {
 #[pymethods]
 impl ShortTimeStrategy {
     #[new]
-    fn new() -> Self {
-        let temp = executor::block_on(ShortTimeSelect::new());
-        short_time_select.set(temp);
+    pub(crate) fn new() -> Self {
         ShortTimeStrategy {
             is_started: false
         }

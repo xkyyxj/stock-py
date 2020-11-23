@@ -11,13 +11,15 @@ use async_std::task::sleep;
 pub struct ShortTimeSelect {
     ema_select: EMASelect,
     sleep_check: SleepDuringStop,
+    all_result: SelectResult,
 }
 
 impl ShortTimeSelect {
     pub(crate) async fn new() -> Self {
         let mut ret_val = ShortTimeSelect {
             ema_select: EMASelect::new().await,
-            sleep_check: SleepDuringStop::new()
+            sleep_check: SleepDuringStop::new(),
+            all_result: SelectResult::new()
         };
         ret_val
     }
@@ -31,18 +33,32 @@ impl ShortTimeSelect {
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let ana_delta_time = config.analyze_time_delta;
         let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
-        let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
         loop {
             let (tx, rx) = mpsc::channel::<SelectResult>();
             let curr_time = Local::now();
             self.sleep_check.check_sleep(&curr_time).await;
-            let tx2 = tx.clone();
-            let future = self.ema_select.select(tx2);
-            // let future2 = self.ema_select.select(tx);
+            let future = self.ema_select.select(tx);
             futures::join!(future);
-            // tokio_runtime.spawn(future);
+
+            let mut temp_result = SelectResult::new();
             for received  in rx {
-                //
+                // 获取结果
+                temp_result.merge(&received);
+            }
+            let new_buy_stock = self.all_result.append(&temp_result);
+            let mut wait_select_stock = String::from("");
+            for item in new_buy_stock {
+                wait_select_stock = wait_select_stock + item.as_str();
+            }
+
+            // 先从库里面删除，然后再将最新结果添加到数据库当中
+            SelectResult::delete().await;
+            self.all_result.sync_to_db().await;
+
+            // 任务栏弹出提示通知消息(评分大于等于60就买入吧)
+            if wait_select_stock.len() > 0 {
+                println!("EMA信号");
+                taskbar.show_win_toast(String::from("EMA Select:"), wait_select_stock);
             }
 
             // 每两秒获取一次
@@ -53,11 +69,6 @@ impl ShortTimeSelect {
             if real_sleep_time.num_nanoseconds().unwrap() > 0 {
                 sleep(real_sleep_time.to_std().unwrap()).await;
             }
-            // 任务栏弹出提示通知消息(评分大于等于60就买入吧)
-            // if wait_select_stock.len() > 0 {
-            //     println!("EMA信号");
-            //     taskbar.show_win_toast(String::from("EMA Select:"), wait_select_stock);
-            // }
         }
     }
 

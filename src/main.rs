@@ -16,7 +16,7 @@ use chrono::{DateTime, Local, FixedOffset, TimeZone};
 
 
 use sqlx::mysql::{MySqlArguments};
-
+use async_std::task;
 
 
 use futures::executor::{ThreadPool, ThreadPoolBuilder};
@@ -47,7 +47,7 @@ use crate::time::{fetch_index_info, INDEX_SUFFIX};
 use crate::utils::{Taskbar};
 use crate::results::{AirCastle};
 use std::thread;
-use crate::py_wrapper::{HistoryDownAna, TimeFetcher};
+use crate::py_wrapper::{HistoryDownAna, TimeFetcher, ShortTimeStrategy};
 use crate::analyzer::HistoryDownAnalyzer;
 use crate::cache::AsyncRedisOperation;
 use crate::calculate::calculate_air_castle;
@@ -272,6 +272,14 @@ fn main() {
     time_fetcher.__call__();
     let mut history_down_ana = HistoryDownAna { is_started: false };
     history_down_ana.__call__();
+
+
+    let mut short_time_select = ShortTimeStrategy::new();
+    short_time_select.__call__();
+
+    task::spawn(async {
+        // some work here
+    });
 
     // 测试查询history_down
     // let rst1 = StockBaseInfo::query(Some("ts_code='000001.SZ'".parse().unwrap()));

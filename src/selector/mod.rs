@@ -114,7 +114,9 @@ impl SelectResult {
     }
 
     /// 蒋某次选择结果汇总到最终结果中来
-    pub(crate) fn append(&mut self, other: &SelectResult) {
+    /// @return 返回所有在这一个append当中可买入的股票
+    pub(crate) fn append(&mut self, other: &SelectResult) -> Vec<String> {
+        let mut ret_rst = Vec::<String>::new();
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let short_time_buy_level = config.short_buy_level;
         let mut only_one = Vec::<SingleSelectResult>::new();
@@ -128,26 +130,33 @@ impl SelectResult {
                         self_item.level = other_item.level;
                         self_item.curr_price = other_item.curr_price;
                         self_item.source = other_item.source.clone();
+                        ret_rst.push(String::from(&self_item.ts_code));
                     }
                     // 已经买入过了
                     else if self_item.level >= short_time_buy_level {
-                        if self_item.level <= other_item.level {
+                        if self_item.level < other_item.level {
                             self_item.level = other_item.level;
                         }
                     }
+                    // 对于self_item.level > other_item.level，一概不处理
                     self_item.line_style = other_item.line_style;
                     contain = true;
                     break;
                 }
             }
             if !contain {
-                only_one.push(other_item.clone());
+                let temp_val = other_item.clone();
+                if temp_val.level >= short_time_buy_level {
+                    ret_rst.push(String::from(&temp_val.ts_code));
+                }
+                only_one.push(temp_val);
             }
         }
         if !only_one.is_empty() {
             self.select_rst.append(&mut only_one);
         }
         self.ts = Local::now();
+        ret_rst
     }
 
     /// 蒋结果同步到数据库当中去

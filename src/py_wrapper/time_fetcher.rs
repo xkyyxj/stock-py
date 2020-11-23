@@ -26,15 +26,9 @@ impl TimeFetcher {
             return
         }
 
+        let columns = vec!["ts_code"];
         let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        let join_handler = tokio_runtime.spawn(
-            async {
-                let columns = vec!["ts_code"];
-                sql::query_stock_list(&columns, " where market in ('主板', '中小板')").await
-            }
-        );
-        let stock_codes_rows = tokio_runtime.block_on(join_handler).unwrap().unwrap();
-        // let stock_codes_rows = executor::block_on().unwrap();
+        let stock_codes_rows = executor::block_on(sql::query_stock_list(&columns, " where market in ('主板', '中小板')")).unwrap();
         let mut count = 0;
         let mut each_thread_codes = Vec::<String>::with_capacity(EACH_THREAD_FETCH_NUM);
         for row in &stock_codes_rows {
@@ -54,9 +48,8 @@ impl TimeFetcher {
 
     /// 清空redis缓存
     pub(crate) fn clear(&self) {
-        let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        let join_handler = tokio_runtime.spawn(async {
-            let columns = vec!["ts_code"];
+        let columns = vec!["ts_code"];
+        executor::block_on(async {
             let mut redis_ope = AsyncRedisOperation::new().await;
             let all_rows = sql::query_stock_list(&columns, " where market in ('主板', '中小板')").await.unwrap();
             for item in &all_rows {
@@ -65,7 +58,5 @@ impl TimeFetcher {
                 redis_ope.delete(ts_code).await;
             }
         });
-        tokio_runtime.block_on(join_handler);
-        // executor::block_on();
     }
 }

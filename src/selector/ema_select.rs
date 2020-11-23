@@ -89,6 +89,7 @@ impl EMASelect {
     /// 策略：获取最近的几条实时信息，如果是正处于下降过程当中的，那么就不加入到备选当中，如果是经历过拐点的，加入到备选当中
     /// 如果是一直处于上涨的过程当中，给个中等评分吧
     pub(crate) async fn select(&mut self, tx: Sender<SelectResult>) {
+        println!("EMA select start!!!");
         for i in 0..self.backup_codes.len() {
             let item = self.backup_codes.get(i).unwrap();
             let temp_ts_code = String::from(item);
