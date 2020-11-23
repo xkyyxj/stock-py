@@ -32,7 +32,10 @@ impl ShortTimeStrategy {
         }
 
         let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        tokio_runtime.spawn(short_time_select.into_inner().unwrap().select());
+        tokio_runtime.spawn(async {
+            let mut select = ShortTimeSelect::new().await;
+            select.select().await;
+        });
 
         self.is_started = true;
     }

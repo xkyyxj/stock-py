@@ -129,70 +129,70 @@ fn insert(val: impl Result) {
     }
 }
 
-fn init() {
-    let aha = Haha{ value : 34 };
-    OHOU.set(aha);
-
-    // let init_block = async {
-    //     let pool = MySqlPool::connect("mysql://root:123@localhost:3306/stock").await.unwrap();
-    //     MYSQL_POOL.set(pool);
-    // };
-
-    // 初始化Redis连接池
-    match redis::Client::open("redis://127.0.0.1/") {
-        Ok(val) => { REDIS_POOL.set(val).unwrap(); },
-        Err(_) => { },
-    };
-
-    let runtime = Builder::new()
-        .threaded_scheduler()
-        .core_threads(8)
-        .thread_name("my-custom-name")
-        .thread_stack_size(3 * 1024 * 1024)
-        .build()
-        .unwrap();
-    TOKIO_RUNTIME.set(runtime).unwrap();
-
-    let mut final_rst = true;
-    // 初始化数据库连接池
-    let init_block = async {
-        let mut options = PoolOptions::<MySql>::new();
-        options = options.max_connections(config::MYSQL_MAX_CONNECTION as u32);
-        match options.connect("mysql://root:123@localhost:3306/stock").await {
-            Ok(val) => { MYSQL_POOL.set(val).unwrap(); },
-            Err(_) => { final_rst = false; },
-        };
-    };
-
-    let mut pool_builder = ThreadPoolBuilder::new();
-    pool_builder.after_start(|usize| {
-        println!("niubilityle {}", usize);
-    });
-    let thread_pool = pool_builder.create().unwrap();
-    THREAD_POOL.set(thread_pool);
-    executor::block_on(init_block);
-
-    let mut temp_value = Vec::<TableMeta>::new();
-
-    common_query("select * from table_meta limit 10", |rows|{
-        for row in rows {
-            let pk_tablemeta: i32 = row.get("pk_tablemeta");
-            let table_name: String = row.get("table_name");
-            let is_redis: String = row.get("is_redis");
-            println!("hahahahah");
-            let tst_val = TableMeta {pk_tablemeta, table_name, is_redis};
-            temp_value.push(tst_val);
-        }
-    });
-
-    for item in &temp_value {
-        println!("value is {}", item.pk_tablemeta);
-    }
-    temp_value.pop();
-    for item in &temp_value {
-        println!("value is {}", item.pk_tablemeta);
-    }
-}
+// fn init() {
+//     let aha = Haha{ value : 34 };
+//     OHOU.set(aha);
+//
+//     // let init_block = async {
+//     //     let pool = MySqlPool::connect("mysql://root:123@localhost:3306/stock").await.unwrap();
+//     //     MYSQL_POOL.set(pool);
+//     // };
+//
+//     // 初始化Redis连接池
+//     match redis::Client::open("redis://127.0.0.1/") {
+//         Ok(val) => { REDIS_POOL.set(val).unwrap(); },
+//         Err(_) => { },
+//     };
+//
+//     let runtime = Builder::new()
+//         .threaded_scheduler()
+//         .core_threads(8)
+//         .thread_name("my-custom-name")
+//         .thread_stack_size(3 * 1024 * 1024)
+//         .build()
+//         .unwrap();
+//     TOKIO_RUNTIME.set(runtime).unwrap();
+//
+//     let mut final_rst = true;
+//     // 初始化数据库连接池
+//     let init_block = async {
+//         let mut options = PoolOptions::<MySql>::new();
+//         options = options.max_connections(config::MYSQL_MAX_CONNECTION as u32);
+//         match options.connect("mysql://root:123@localhost:3306/stock").await {
+//             Ok(val) => { MYSQL_POOL.set(val).unwrap(); },
+//             Err(_) => { final_rst = false; },
+//         };
+//     };
+//
+//     let mut pool_builder = ThreadPoolBuilder::new();
+//     pool_builder.after_start(|usize| {
+//         println!("niubilityle {}", usize);
+//     });
+//     let thread_pool = pool_builder.create().unwrap();
+//     THREAD_POOL.set(thread_pool);
+//     executor::block_on(init_block);
+//
+//     let mut temp_value = Vec::<TableMeta>::new();
+//
+//     common_query("select * from table_meta limit 10", |rows|{
+//         for row in rows {
+//             let pk_tablemeta: i32 = row.get("pk_tablemeta");
+//             let table_name: String = row.get("table_name");
+//             let is_redis: String = row.get("is_redis");
+//             println!("hahahahah");
+//             let tst_val = TableMeta {pk_tablemeta, table_name, is_redis};
+//             temp_value.push(tst_val);
+//         }
+//     });
+//
+//     for item in &temp_value {
+//         println!("value is {}", item.pk_tablemeta);
+//     }
+//     temp_value.pop();
+//     for item in &temp_value {
+//         println!("value is {}", item.pk_tablemeta);
+//     }
+// }
 // fn main() {
 //     let mut map = HashMap::<String, String>::new();
 //     map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
@@ -260,18 +260,18 @@ fn main() {
     // air_castle_cal();
 
     // 尝试select
-    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-    tokio_runtime.spawn(async {
-        let selector = ShortTimeSelect::new();
-        selector.select().await;
-    });
+    // let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
+    // tokio_runtime.spawn(async {
+    //     let selector = ShortTimeSelect::new();
+    //     selector.select().await;
+    // });
 
     // 测试获取实时信息
-    // let mut time_fetcher = TimeFetcher{ is_started: false };
-    // time_fetcher.clear();
-    // time_fetcher.__call__();
-    // let mut history_down_ana = HistoryDownAna { is_started: false };
-    // history_down_ana.__call__();
+    let mut time_fetcher = TimeFetcher{ is_started: false };
+    time_fetcher.clear();
+    time_fetcher.__call__();
+    let mut history_down_ana = HistoryDownAna { is_started: false };
+    history_down_ana.__call__();
 
     // 测试查询history_down
     // let rst1 = StockBaseInfo::query(Some("ts_code='000001.SZ'".parse().unwrap()));

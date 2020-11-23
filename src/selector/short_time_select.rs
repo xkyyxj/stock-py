@@ -26,7 +26,7 @@ impl ShortTimeSelect {
         self.ema_select.initialize().await;
     }
 
-    pub(crate) async fn select(&'static mut self) {
+    pub(crate) async fn select(&mut self) {
         // 第零步：获取初始化的配置信息
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let ana_delta_time = config.analyze_time_delta;
@@ -36,10 +36,11 @@ impl ShortTimeSelect {
             let (tx, rx) = mpsc::channel::<SelectResult>();
             let curr_time = Local::now();
             self.sleep_check.check_sleep(&curr_time).await;
-            let join_handler = tokio_runtime.spawn(self.ema_select.select(tx));
-            executor::block_on(async {
-                join_handler.await;
-            });
+            let tx2 = tx.clone();
+            let future = self.ema_select.select(tx2);
+            // let future2 = self.ema_select.select(tx);
+            futures::join!(future);
+            // tokio_runtime.spawn(future);
             for received  in rx {
                 //
             }
