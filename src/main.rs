@@ -284,7 +284,7 @@ fn main() {
     // 测试查询history_down
     // let rst1 = StockBaseInfo::query(Some("ts_code='000001.SZ'".parse().unwrap()));
     // let rst = HistoryDown::query(None);
-    sleep(Duration::from_secs(2000));
+    sleep(Duration::from_secs(200000));
     // test_aysnc1();
     // let temp_future = async {
     //     let mut async_conn = redis_client.get_async_connection().await.unwrap();

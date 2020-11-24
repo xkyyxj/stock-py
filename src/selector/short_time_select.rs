@@ -5,13 +5,13 @@ use std::pin::Pin;
 use crate::utils::time_utils::SleepDuringStop;
 use chrono::{Local, Duration};
 use std::sync::mpsc;
-use crate::selector::SelectResult;
+use crate::selector::ShortTimeSelectResult;
 use async_std::task::sleep;
 
 pub struct ShortTimeSelect {
     ema_select: EMASelect,
     sleep_check: SleepDuringStop,
-    all_result: SelectResult,
+    all_result: ShortTimeSelectResult,
 }
 
 impl ShortTimeSelect {
@@ -19,7 +19,7 @@ impl ShortTimeSelect {
         let mut ret_val = ShortTimeSelect {
             ema_select: EMASelect::new().await,
             sleep_check: SleepDuringStop::new(),
-            all_result: SelectResult::new()
+            all_result: ShortTimeSelectResult::new()
         };
         ret_val
     }
@@ -34,13 +34,13 @@ impl ShortTimeSelect {
         let ana_delta_time = config.analyze_time_delta;
         let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
         loop {
-            let (tx, rx) = mpsc::channel::<SelectResult>();
+            let (tx, rx) = mpsc::channel::<ShortTimeSelectResult>();
             let curr_time = Local::now();
             self.sleep_check.check_sleep(&curr_time).await;
             let future = self.ema_select.select(tx);
             futures::join!(future);
 
-            let mut temp_result = SelectResult::new();
+            let mut temp_result = ShortTimeSelectResult::new();
             for received  in rx {
                 // 获取结果
                 temp_result.merge(&received);
@@ -52,7 +52,7 @@ impl ShortTimeSelect {
             }
 
             // 先从库里面删除，然后再将最新结果添加到数据库当中
-            SelectResult::delete().await;
+            ShortTimeSelectResult::delete().await;
             self.all_result.sync_to_db().await;
 
             // 任务栏弹出提示通知消息(评分大于等于60就买入吧)
@@ -73,7 +73,7 @@ impl ShortTimeSelect {
     }
 
     /// 处理策略：如果是
-    fn process_ana_result(&mut self, result: SelectResult) {
+    fn process_ana_result(&mut self, result: ShortTimeSelectResult) {
 
     }
 }

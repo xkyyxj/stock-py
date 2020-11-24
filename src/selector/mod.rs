@@ -18,7 +18,7 @@ static SINGLE_PRICE: i32 = 3;       // 一直一个价格
 static WAVE: i32 = 4;               // 反复波动
 
 
-pub(crate) struct SingleSelectResult {
+pub(crate) struct SingleShortTimeSelectResult {
     pub(crate) ts_code: String,
     pub(crate) ts_name: String,
     pub(crate) curr_price: f64,
@@ -28,9 +28,9 @@ pub(crate) struct SingleSelectResult {
     pub(crate) line_style: i32,         // 分时线形态：-1 一直下降；0 经历过拐点(先下降后上升)；1 先上升后下降；2 一直上涨；3 一直一个价;4 反复波动
 }
 
-impl SingleSelectResult {
+impl SingleShortTimeSelectResult {
     pub(crate) fn new() -> Self {
-        SingleSelectResult {
+        SingleShortTimeSelectResult {
             ts_code: "".to_string(),
             ts_name: "".to_string(),
             curr_price: 0.0,
@@ -58,9 +58,9 @@ impl SingleSelectResult {
     }
 }
 
-impl Clone for SingleSelectResult {
+impl Clone for SingleShortTimeSelectResult {
     fn clone(&self) -> Self {
-        SingleSelectResult {
+        SingleShortTimeSelectResult {
             ts_code: String::from(&self.ts_code),
             ts_name: String::from(&self.ts_name),
             curr_price: self.curr_price,
@@ -72,25 +72,25 @@ impl Clone for SingleSelectResult {
     }
 }
 
-pub(crate) struct SelectResult {
-    pub(crate) select_rst: Vec<SingleSelectResult>,
+pub(crate) struct ShortTimeSelectResult {
+    pub(crate) select_rst: Vec<SingleShortTimeSelectResult>,
     pub(crate) ts: DateTime<Local>,
 }
 
-impl SelectResult {
+impl ShortTimeSelectResult {
 
     pub(crate) fn new() -> Self {
-        SelectResult { select_rst: vec![], ts: Local::now() }
+        ShortTimeSelectResult { select_rst: vec![], ts: Local::now() }
     }
 
-    pub(crate) fn add_selected(&mut self, info :SingleSelectResult) {
+    pub(crate) fn add_selected(&mut self, info : SingleShortTimeSelectResult) {
         self.select_rst.push(info);
     }
 
     /// 合并结果用于多个不同的选择策略的合并，蒋选择结果合并到最终结果当中需要用到append方法
     /// 两个结果的合并，重复的结果得分的简单相加，只在一方存在的结果添加到最终结果集里面
-    pub(crate) fn merge(&mut self, other: &SelectResult) {
-        let mut only_one = Vec::<SingleSelectResult>::new();
+    pub(crate) fn merge(&mut self, other: &ShortTimeSelectResult) {
+        let mut only_one = Vec::<SingleShortTimeSelectResult>::new();
         for other_item in &other.select_rst {
             let mut contain = false;
             for self_item in &mut self.select_rst {
@@ -115,11 +115,11 @@ impl SelectResult {
 
     /// 蒋某次选择结果汇总到最终结果中来
     /// @return 返回所有在这一个append当中可买入的股票
-    pub(crate) fn append(&mut self, other: &SelectResult) -> Vec<String> {
+    pub(crate) fn append(&mut self, other: &ShortTimeSelectResult) -> Vec<String> {
         let mut ret_rst = Vec::<String>::new();
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let short_time_buy_level = config.short_buy_level;
-        let mut only_one = Vec::<SingleSelectResult>::new();
+        let mut only_one = Vec::<SingleShortTimeSelectResult>::new();
         for other_item in &other.select_rst {
             let mut contain = false;
             for self_item in &mut self.select_rst {
@@ -181,15 +181,91 @@ impl SelectResult {
     }
 }
 
-impl Clone for SelectResult {
+impl Clone for ShortTimeSelectResult {
     fn clone(&self) -> Self {
-        let mut vec: Vec<SingleSelectResult> = vec![];
+        let mut vec: Vec<SingleShortTimeSelectResult> = vec![];
         for item in &self.select_rst {
             vec.push(item.clone());
         }
-        SelectResult {
+        ShortTimeSelectResult {
             select_rst: vec,
             ts: self.ts.clone()
+        }
+    }
+}
+
+pub struct SingleShortTimeHistory {
+    pub(crate) ts_code: String,
+    pub(crate) ts_name: String,
+    pub(crate) in_price: f64,
+    pub(crate) level: i64,              // 评分：0-100分
+    pub(crate) source: String,          // 来源系统，通过ema选定还是什么其他指标
+    pub(crate) level_pct: f64,          // 得分的百分比
+    pub(crate) line_style: i32,         // 分时线形态：-1 一直下降；0 经历过拐点(先下降后上升)；1 先上升后下降；2 一直上涨；3 一直一个价;4 反复波动
+    pub(crate) five_win: f64,           // 五日盈利百分比
+    pub(crate) seven_win: f64,          // 七日盈利百分比
+}
+
+impl From<&SingleShortTimeSelectResult> for SingleShortTimeHistory {
+    fn from(source: &SingleShortTimeSelectResult) -> Self {
+        SingleShortTimeHistory {
+            ts_code: String::from(&source.ts_code),
+            ts_name: String::from(&source.ts_code),
+            in_price: source.curr_price,
+            level: source.level,
+            source: String::from(&source.source),
+            level_pct: source.level_pct,
+            line_style: source.line_style,
+            five_win: 0.0,
+            seven_win: 0.0
+        }
+    }
+}
+
+impl SingleShortTimeHistory {
+    pub(crate) async fn sync_to_db(&self, curr_time: &String, conn: &mut PoolConnection<MySql>) {
+        let mut query = sqlx::query("insert into short_time_history(ts_code, in_price, in_time, source, level)\
+        values(?,?,?,?,?)");
+        query = query.bind(self.ts_code.clone());
+        query = query.bind(self.in_price);
+        query = query.bind(curr_time.clone());
+        query = query.bind(self.source.clone());
+        query = query.bind(self.level);
+        match query.execute(conn).await {
+            Ok(_) => {},
+            Err(err) => {
+                println!("err is {}", format!("{:?}", err));
+            },
+        }
+    }
+}
+
+pub struct ShortTimeHistory {
+    pub(crate) select_rst: Vec<SingleShortTimeHistory>,
+    pub(crate) ts: DateTime<Local>,
+}
+
+impl From<&ShortTimeSelectResult> for ShortTimeHistory {
+    fn from(source: &ShortTimeSelectResult) -> Self {
+        let mut ret_val = ShortTimeHistory { select_rst: vec![], ts: source.ts.clone() };
+        for item in &source.select_rst {
+            ret_val.select_rst.push(SingleShortTimeHistory::from(item));
+        }
+        ret_val
+    }
+}
+
+impl ShortTimeHistory {
+    pub(crate) async fn sync_to_db(&self) {
+        if self.select_rst.is_empty() {
+            return;
+        }
+
+        let sql_client = crate::initialize::MYSQL_POOL.get().unwrap();
+        let mut conn = sql_client.acquire().await.unwrap();
+        for item in &self.select_rst {
+            let curr_time_str= self.ts.format("%Y%m%d %H:%M:%S").to_string();
+            item.sync_to_db(&curr_time_str, &mut conn).await;
         }
     }
 }

@@ -6,7 +6,7 @@ use crate::sql;
 use std::collections::HashMap;
 use sqlx::Row;
 use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
-use crate::selector::{SelectResult, SingleSelectResult};
+use crate::selector::{ShortTimeSelectResult, SingleShortTimeSelectResult};
 use std::sync::mpsc::Sender;
 
 static EAM_LEVEL_PCT: f64 = 0.5;
@@ -18,7 +18,7 @@ pub struct EMAAnaInfo {
 
 pub struct EMASelect {
     backup_codes: Vec<String>,
-    selected_rst: SelectResult,
+    selected_rst: ShortTimeSelectResult,
     code2name_map: HashMap<String, String>,
     code2ana_info_map: HashMap<String, EMAAnaInfo>,
     redis_ope: AsyncRedisOperation,
@@ -28,7 +28,7 @@ impl EMASelect {
     pub(crate) async fn new() -> Self {
         EMASelect {
             backup_codes: vec![],
-            selected_rst: SelectResult::new(),
+            selected_rst: ShortTimeSelectResult::new(),
             code2name_map: Default::default(),
             code2ana_info_map: Default::default(),
             redis_ope: AsyncRedisOperation::new().await
@@ -88,7 +88,7 @@ impl EMASelect {
 
     /// 策略：获取最近的几条实时信息，如果是正处于下降过程当中的，那么就不加入到备选当中，如果是经历过拐点的，加入到备选当中
     /// 如果是一直处于上涨的过程当中，给个中等评分吧
-    pub(crate) async fn select(&mut self, tx: Sender<SelectResult>) {
+    pub(crate) async fn select(&mut self, tx: Sender<ShortTimeSelectResult>) {
         println!("EMA select start!!!");
         for i in 0..self.backup_codes.len() {
             let item = self.backup_codes.get(i).unwrap();
@@ -109,7 +109,7 @@ impl EMASelect {
             }
 
             // TODO -- 待完善
-            let single_rst = SingleSelectResult{
+            let single_rst = SingleShortTimeSelectResult {
                 ts_code: String::from(&temp_ts_code),
                 ts_name: String::from(self.code2name_map.get(temp_ts_code.as_str()).unwrap()),
                 curr_price: pre_price,
@@ -123,7 +123,7 @@ impl EMASelect {
         }
     }
 
-    fn judge_can_add(&mut self, mut single_rst: SingleSelectResult, up_state: i32) {
+    fn judge_can_add(&mut self, mut single_rst: SingleShortTimeSelectResult, up_state: i32) {
         match up_state {
             -1 => {
                 single_rst.level = 0;

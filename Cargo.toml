@@ -14,9 +14,10 @@ sqlx = { version = "0.4.1", features = ["mysql", "runtime-async-std-native-tls"]
 async-std = { version = "1.7.0", features = ["attributes"] }
 paw = "1.0"
 futures = { version= "0.3", features = ["thread-pool"] }
-tokio = { version = "0.3.4", features = ["full"] }
+tokio = { version = "0.3.4", features = ["rt-multi-thread", "full"] }
 once_cell = "1.5.2"
 chrono = "0.4"
+surf = "2.1.0"
 hyper = "0.13"
 encoding = "0.2.33"
 redis = { version = "0.17.0", features = ["tokio-comp"] }

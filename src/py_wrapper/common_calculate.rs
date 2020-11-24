@@ -4,8 +4,10 @@ use pyo3::types::PyDict;
 use futures::executor;
 use crate::calculate::{ calculate_in_low, calculate_air_castle };
 use crate::calculate::calculate_history_down;
+use crate::py_wrapper::ShortTimeStrategy;
 
 pub fn init_common_calculate(module: &PyModule) {
+    module.add_class::<ShortTimeStrategy>().unwrap();
     module.add_wrapped(wrap_pyfunction!(calculate_in_low_sync)).unwrap();
     module.add_wrapped(wrap_pyfunction!(calculate_in_low_async)).unwrap();
     module.add_wrapped(wrap_pyfunction!(calculate_history_down_async)).unwrap();
