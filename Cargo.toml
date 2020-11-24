@@ -17,6 +17,7 @@ futures = { version= "0.3" }
 once_cell = "1.5.2"
 chrono = "0.4"
 surf = "2.1.0"
+combine = { version="4.4.0", features=["std", "futures-io-03"] }
 redis = { version = "0.17.0" }
 flate2 = { version = "1.0.17", features = ["zlib-ng-compat"], default-features = false }
 

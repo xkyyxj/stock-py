@@ -1,7 +1,7 @@
 use std::ops::Add;
 use sqlx::{Row, Error, MySql};
 use sqlx::mysql::MySqlRow;
-use futures::executor;
+use async_std::task;
 use crate::results::{StockBaseInfo, DBResult};
 use sqlx::pool::PoolConnection;
 
@@ -9,7 +9,7 @@ use sqlx::pool::PoolConnection;
 pub fn common_query(sql: &str, mut f: impl FnMut(&Vec<MySqlRow>)) {
     let pool = crate::initialize::MYSQL_POOL.get().unwrap();
     let query_fut = sqlx::query(sql).fetch_all(pool);
-    let all_rows = executor::block_on(query_fut).unwrap();
+    let all_rows = task::block_on(query_fut).unwrap();
     f(&all_rows);
 }
 

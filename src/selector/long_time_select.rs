@@ -1,21 +1,18 @@
 use crate::results::TimeIndexBaseInfo;
-use crate::selector::ema_select::{EMASelect};
-use futures::{Future, executor};
-use std::pin::Pin;
+use futures::{Future};
 use crate::utils::time_utils::SleepDuringStop;
 use chrono::{DateTime, Local, Duration};
 use std::sync::mpsc;
 use async_std::task::sleep;
 use crate::results::DBResult;
-use crate::sql;
 use sqlx::query::Query;
-use sqlx::{MySql, Row};
+use sqlx::{MySql};
 use sqlx::mysql::MySqlArguments;
 use sqlx::pool::PoolConnection;
-use crate::simulate::sync_short_history;
 
-//-------------------短期筛选结果集--------------------------------------------------------------------
-pub struct SingleShortTimeSelectResult {
+
+//------------------长期筛选结果集--------------------------------------------------------------------
+pub(crate) struct SingleLongTimeSelectResult {
     pub(crate) ts_code: String,
     pub(crate) ts_name: String,
     pub(crate) curr_price: f64,
@@ -25,9 +22,9 @@ pub struct SingleShortTimeSelectResult {
     pub(crate) line_style: i32,         // 分时线形态：-1 一直下降；0 经历过拐点(先下降后上升)；1 先上升后下降；2 一直上涨；3 一直一个价;4 反复波动
 }
 
-impl SingleShortTimeSelectResult {
+impl SingleLongTimeSelectResult {
     pub(crate) fn new() -> Self {
-        SingleShortTimeSelectResult {
+        SingleLongTimeSelectResult {
             ts_code: "".to_string(),
             ts_name: "".to_string(),
             curr_price: 0.0,
@@ -39,14 +36,13 @@ impl SingleShortTimeSelectResult {
     }
 
     pub(crate) async fn insert_to_db(&self, curr_time: &String, conn: &mut PoolConnection<MySql>) {
-        let mut query = sqlx::query("insert into short_select_in_time(ts_code, in_price, in_time, source, level, line_style)\
-        values(?,?,?,?,?,?)");
+        let mut query = sqlx::query("insert into short_select_in_time(ts_code, in_price, in_time, source, level)\
+        values(?,?,?,?,?)");
         query = query.bind(self.ts_code.clone());
         query = query.bind(self.curr_price);
         query = query.bind(curr_time.clone());
         query = query.bind(self.source.clone());
         query = query.bind(self.level);
-        query = query.bind(self.line_style);
         match query.execute(conn).await {
             Ok(_) => {},
             Err(err) => {
@@ -56,9 +52,9 @@ impl SingleShortTimeSelectResult {
     }
 }
 
-impl Clone for SingleShortTimeSelectResult {
+impl Clone for SingleLongTimeSelectResult {
     fn clone(&self) -> Self {
-        SingleShortTimeSelectResult {
+        SingleLongTimeSelectResult {
             ts_code: String::from(&self.ts_code),
             ts_name: String::from(&self.ts_name),
             curr_price: self.curr_price,
@@ -70,25 +66,25 @@ impl Clone for SingleShortTimeSelectResult {
     }
 }
 
-pub struct ShortTimeSelectResult {
-    pub(crate) select_rst: Vec<SingleShortTimeSelectResult>,
+pub(crate) struct LongTimeSelectResult {
+    pub(crate) select_rst: Vec<SingleLongTimeSelectResult>,
     pub(crate) ts: DateTime<Local>,
 }
 
-impl ShortTimeSelectResult {
+impl LongTimeSelectResult {
 
     pub(crate) fn new() -> Self {
-        ShortTimeSelectResult { select_rst: vec![], ts: Local::now() }
+        LongTimeSelectResult { select_rst: vec![], ts: Local::now() }
     }
 
-    pub(crate) fn add_selected(&mut self, info : SingleShortTimeSelectResult) {
+    pub(crate) fn add_selected(&mut self, info : SingleLongTimeSelectResult) {
         self.select_rst.push(info);
     }
 
     /// 合并结果用于多个不同的选择策略的合并，蒋选择结果合并到最终结果当中需要用到append方法
     /// 两个结果的合并，重复的结果得分的简单相加，只在一方存在的结果添加到最终结果集里面
-    pub(crate) fn merge(&mut self, other: &ShortTimeSelectResult) {
-        let mut only_one = Vec::<SingleShortTimeSelectResult>::new();
+    pub(crate) fn merge(&mut self, other: &LongTimeSelectResult) {
+        let mut only_one = Vec::<SingleLongTimeSelectResult>::new();
         for other_item in &other.select_rst {
             let mut contain = false;
             for self_item in &mut self.select_rst {
@@ -113,11 +109,11 @@ impl ShortTimeSelectResult {
 
     /// 蒋某次选择结果汇总到最终结果中来
     /// @return 返回所有在这一个append当中可买入的股票
-    pub(crate) fn append(&mut self, other: &ShortTimeSelectResult) -> Vec<String> {
+    pub(crate) fn append(&mut self, other: &LongTimeSelectResult) -> Vec<String> {
         let mut ret_rst = Vec::<String>::new();
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let short_time_buy_level = config.short_buy_level;
-        let mut only_one = Vec::<SingleShortTimeSelectResult>::new();
+        let mut only_one = Vec::<SingleLongTimeSelectResult>::new();
         for other_item in &other.select_rst {
             let mut contain = false;
             for self_item in &mut self.select_rst {
@@ -177,108 +173,94 @@ impl ShortTimeSelectResult {
         let sql = "delete from short_select_in_time;";
         sqlx::query(sql).execute(pool);
     }
-
-    /// 从数据库当中查询所有的结果
-    pub(crate) async fn query_all() -> Self {
-        let pool = crate::initialize::MYSQL_POOL.get().unwrap();
-        let all_rows = sqlx::query("select * from short_select_intime").
-            fetch_all(pool).await.unwrap();
-
-        let mut ret_rst = ShortTimeSelectResult::new();
-        for row in &all_rows {
-            let mut temp_item = SingleShortTimeSelectResult::new();
-            temp_item.ts_code = row.get("ts_code");
-            temp_item.curr_price = row.get::<'_, f64, &str>("in_price");
-            temp_item.line_style = row.get::<'_, i32, &str>("line_style");
-            temp_item.source = row.get("source");
-            temp_item.level = row.get::<'_, i64, &str>("level");
-            ret_rst.select_rst.push(temp_item);
-        }
-        ret_rst
-    }
 }
 
-impl Clone for ShortTimeSelectResult {
+impl Clone for LongTimeSelectResult {
     fn clone(&self) -> Self {
-        let mut vec: Vec<SingleShortTimeSelectResult> = vec![];
+        let mut vec: Vec<SingleLongTimeSelectResult> = vec![];
         for item in &self.select_rst {
             vec.push(item.clone());
         }
-        ShortTimeSelectResult {
+        LongTimeSelectResult {
             select_rst: vec,
             ts: self.ts.clone()
         }
     }
 }
-//-------------------短期筛选结果集--end---------------------------------------------------------------
 
-pub struct ShortTimeSelect {
-    ema_select: EMASelect,
-    sleep_check: SleepDuringStop,
-    all_result: ShortTimeSelectResult,
+pub struct SingleShortTimeHistory {
+    pub(crate) ts_code: String,
+    pub(crate) ts_name: String,
+    pub(crate) in_price: f64,
+    pub(crate) level: i64,              // 评分：0-100分
+    pub(crate) source: String,          // 来源系统，通过ema选定还是什么其他指标
+    pub(crate) level_pct: f64,          // 得分的百分比
+    pub(crate) line_style: i32,         // 分时线形态：-1 一直下降；0 经历过拐点(先下降后上升)；1 先上升后下降；2 一直上涨；3 一直一个价;4 反复波动
+    pub(crate) five_win: f64,           // 五日盈利百分比
+    pub(crate) seven_win: f64,          // 七日盈利百分比
 }
 
-impl ShortTimeSelect {
-    pub(crate) async fn new() -> Self {
-        let mut ret_val = ShortTimeSelect {
-            ema_select: EMASelect::new().await,
-            sleep_check: SleepDuringStop::new(),
-            all_result: ShortTimeSelectResult::new()
-        };
-        ret_val
-    }
-
-    pub async fn initialize(&mut self) {
-        self.ema_select.initialize().await;
-    }
-
-    pub(crate) async fn select(&mut self) {
-        // 第零步：获取初始化的配置信息
-        let config = crate::initialize::CONFIG_INFO.get().unwrap();
-        let ana_delta_time = config.analyze_time_delta;
-        let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
-        loop {
-            let (tx, rx) = mpsc::channel::<ShortTimeSelectResult>();
-            let curr_time = Local::now();
-            sync_short_history(curr_time).await;
-            self.sleep_check.check_sleep(&curr_time).await;
-            let future = self.ema_select.select(tx);
-            futures::join!(future);
-
-            let mut temp_result = ShortTimeSelectResult::new();
-            for received  in rx {
-                // 获取结果
-                temp_result.merge(&received);
-            }
-            let new_buy_stock = self.all_result.append(&temp_result);
-            let mut wait_select_stock = String::from("");
-            for item in new_buy_stock {
-                wait_select_stock = wait_select_stock + item.as_str();
-            }
-
-            // 先从库里面删除，然后再将最新结果添加到数据库当中
-            ShortTimeSelectResult::delete().await;
-            self.all_result.sync_to_db().await;
-
-            // 任务栏弹出提示通知消息(评分大于等于60就买入吧)
-            if wait_select_stock.len() > 0 {
-                println!("EMA信号");
-                taskbar.show_win_toast(String::from("EMA Select:"), wait_select_stock);
-            }
-
-            // 每两秒获取一次
-            let two_seconds_duration = Duration::seconds(ana_delta_time);
-            let fetch_finish_time = Local::now();
-            let fetch_cost_time = fetch_finish_time - curr_time;
-            let real_sleep_time = two_seconds_duration - fetch_cost_time;
-            if real_sleep_time.num_nanoseconds().unwrap() > 0 {
-                sleep(real_sleep_time.to_std().unwrap()).await;
-            }
+impl From<&SingleLongTimeSelectResult> for SingleShortTimeHistory {
+    fn from(source: &SingleLongTimeSelectResult) -> Self {
+        SingleShortTimeHistory {
+            ts_code: String::from(&source.ts_code),
+            ts_name: String::from(&source.ts_code),
+            in_price: source.curr_price,
+            level: source.level,
+            source: String::from(&source.source),
+            level_pct: source.level_pct,
+            line_style: source.line_style,
+            five_win: 0.0,
+            seven_win: 0.0
         }
     }
+}
 
-    /// 处理策略：如果是
-    fn process_ana_result(&mut self, result: ShortTimeSelectResult) {
-
+impl SingleShortTimeHistory {
+    pub(crate) async fn sync_to_db(&self, curr_time: &String, conn: &mut PoolConnection<MySql>) {
+        let mut query = sqlx::query("insert into short_time_history(ts_code, in_price, in_time, source, level)\
+        values(?,?,?,?,?)");
+        query = query.bind(self.ts_code.clone());
+        query = query.bind(self.in_price);
+        query = query.bind(curr_time.clone());
+        query = query.bind(self.source.clone());
+        query = query.bind(self.level);
+        match query.execute(conn).await {
+            Ok(_) => {},
+            Err(err) => {
+                println!("err is {}", format!("{:?}", err));
+            },
+        }
     }
 }
+
+pub struct ShortTimeHistory {
+    pub(crate) select_rst: Vec<SingleShortTimeHistory>,
+    pub(crate) ts: DateTime<Local>,
+}
+
+impl From<&LongTimeSelectResult> for ShortTimeHistory {
+    fn from(source: &LongTimeSelectResult) -> Self {
+        let mut ret_val = ShortTimeHistory { select_rst: vec![], ts: source.ts.clone() };
+        for item in &source.select_rst {
+            ret_val.select_rst.push(SingleShortTimeHistory::from(item));
+        }
+        ret_val
+    }
+}
+
+impl ShortTimeHistory {
+    pub(crate) async fn sync_to_db(&self) {
+        if self.select_rst.is_empty() {
+            return;
+        }
+
+        let sql_client = crate::initialize::MYSQL_POOL.get().unwrap();
+        let mut conn = sql_client.acquire().await.unwrap();
+        for item in &self.select_rst {
+            let curr_time_str= self.ts.format("%Y%m%d %H:%M:%S").to_string();
+            item.sync_to_db(&curr_time_str, &mut conn).await;
+        }
+    }
+}
+//------------------长期筛选结果集--end---------------------------------------------------------------

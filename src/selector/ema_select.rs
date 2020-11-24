@@ -1,5 +1,4 @@
 use crate::results::TimeIndexBaseInfo;
-use crate::selector::short_time_select::ShortTimeSelect;
 use futures::Future;
 use std::pin::Pin;
 use crate::sql;
@@ -9,8 +8,7 @@ use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
 use crate::selector::{ShortTimeSelectResult, SingleShortTimeSelectResult};
 use std::sync::mpsc::Sender;
 
-static EAM_LEVEL_PCT: f64 = 0.5;
-
+/// 短期选择策略
 pub struct EMAAnaInfo {
     last_ema_value: f64,
 
@@ -89,7 +87,6 @@ impl EMASelect {
     /// 策略：获取最近的几条实时信息，如果是正处于下降过程当中的，那么就不加入到备选当中，如果是经历过拐点的，加入到备选当中
     /// 如果是一直处于上涨的过程当中，给个中等评分吧
     pub(crate) async fn select(&mut self, tx: Sender<ShortTimeSelectResult>) {
-        println!("EMA select start!!!");
         for i in 0..self.backup_codes.len() {
             let item = self.backup_codes.get(i).unwrap();
             let temp_ts_code = String::from(item);

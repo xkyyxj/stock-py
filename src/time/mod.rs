@@ -47,8 +47,16 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
         let curr_time = Local::now();
         if (curr_time >= _up_begin_time && curr_time <= _up_end_time) ||
             (curr_time >= _down_begin_time && curr_time <= _down_end_time) {
-            let mut res = surf::get(target_string.as_str()).await.unwrap();
-            let ret_val = res.body_string().await.unwrap();
+            let ret_rst = surf::get(target_string.as_str()).await;
+            if let Err(_) = ret_rst {
+                continue;
+            }
+            let mut res = ret_rst.unwrap();
+            let ret_val_rst = res.body_string().await;
+            if let Err(_) = ret_val_rst {
+                continue;
+            }
+            let ret_val = ret_val_rst.unwrap();
             split_multi_info(ret_val, &mut redis_ope).await;
 
             // 每两秒获取一次

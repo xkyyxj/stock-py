@@ -72,7 +72,7 @@ impl Taskbar {
             params.szTip = tip_arr;
             params.hIcon = icon;
             params.uID = WM_USER + 20;
-            params.u = NOTIFYICONDATAW_u{ 0: [1] };
+            // params.u = NOTIFYICONDATAW_u{ 0: [1] };
             if Shell_NotifyIconW(NIM_ADD, &mut params) == 0 {
                 println!("Add failed");
             }

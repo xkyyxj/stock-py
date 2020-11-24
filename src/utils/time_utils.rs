@@ -62,6 +62,13 @@ impl SleepDuringStop {
             }
         }
     }
+
+    /// 查询调用方法的传入时间是不是夜间：
+    /// 当天早盘开盘之钱或者下午闭市之后 -> 返回true
+    /// 其他时间点 -> 返回false
+    pub(crate) fn check_curr_night_rest(&self, curr_time: &DateTime<Local>) -> bool {
+        curr_time > &self._down_end_time || curr_time < &self._up_begin_time
+    }
 }
 
 pub fn curr_date() -> DateTime<Local> {
