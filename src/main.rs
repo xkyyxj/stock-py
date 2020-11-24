@@ -18,10 +18,6 @@ use chrono::{DateTime, Local, FixedOffset, TimeZone};
 use sqlx::mysql::{MySqlArguments};
 use async_std::task;
 
-
-use futures::executor::{ThreadPool, ThreadPoolBuilder};
-
-use futures::executor;
 use futures::task::{SpawnExt};
 
 use once_cell::sync::OnceCell;
@@ -32,8 +28,6 @@ use sqlx::{Row, MySql, Pool};
 use sqlx::query::Query;
 use sqlx::pool::PoolOptions;
 
-use tokio::runtime::{Runtime, Builder};
-use tokio::task::JoinHandle;
 
 use std::str::FromStr;
 use std::collections::HashMap;
@@ -52,6 +46,7 @@ use crate::analyzer::HistoryDownAnalyzer;
 use crate::cache::AsyncRedisOperation;
 use crate::calculate::calculate_air_castle;
 use crate::selector::ShortTimeSelect;
+use async_std::task::JoinHandle;
 // use std::marker::Pinned;
 // use std::sync::{Arc, Mutex};
 // use mysql::*;
@@ -80,7 +75,7 @@ impl Drop for Haha {
 pub fn common_query(sql: &str, mut f: impl FnMut(&Vec<MySqlRow>)) {
     let conn = MYSQL_POOL.get().unwrap();
     let query_fut = sqlx::query(sql).fetch_all(conn);
-    let all_rows = executor::block_on(query_fut).unwrap();
+    let all_rows = task::block_on(query_fut).unwrap();
     f(&all_rows);
 }
 
@@ -89,10 +84,6 @@ static aha2: Haha = Haha {value : 45};
 static OHOU: OnceCell<Haha> = OnceCell::new();
 
 static MYSQL_POOL: OnceCell<Pool<MySql>> = OnceCell::new();
-
-static TOKIO_RUNTIME: OnceCell<Runtime> = OnceCell::new();
-
-static THREAD_POOL: OnceCell<ThreadPool> = OnceCell::new();
 
 static REDIS_POOL: OnceCell<redis::Client> = OnceCell::new();
 
@@ -123,7 +114,7 @@ fn insert(val: impl Result) {
     let mut query = val.insert();
     query = val.bind(query);
     let conn = MYSQL_POOL.get().unwrap();
-    match executor::block_on(query.execute(conn)) {
+    match task::block_on(query.execute(conn)) {
         Ok(_) => println!("ok"),
         Err(err) => println!("err is {}", format!("{:?}", err)),
     }
@@ -211,11 +202,10 @@ fn insert(val: impl Result) {
 
 fn air_castle_cal() {
     let ts_codes = vec![String::from("000001.SZ")];
-    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-    let join_handler = tokio_runtime.spawn(async{
+    let join_handler = task::spawn(async{
         calculate_air_castle().await;
     });
-    executor::block_on(async {
+    task::block_on(async {
         join_handler.await;
     });
 }
@@ -406,8 +396,7 @@ fn main() {
 fn test2222() {
     // 下面一段代码报错了
     let columns = vec!["ts_code"];
-    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-    let stock_codes_rows = executor::block_on(sql::query_stock_list(&columns, "")).unwrap();
+    let stock_codes_rows = task::block_on(sql::query_stock_list(&columns, "")).unwrap();
     let mut count = 0;
     let mut each_thread_codes = Vec::<String>::new();
     // each_thread_codes.push(String::from("000001.SZ"));
@@ -424,12 +413,12 @@ fn test2222() {
         each_thread_codes.push(ts_code);
         count = count + 1;
         if count == 330 {
-            join_handlers.push(tokio_runtime.spawn(crate::time::fetch_index_info(each_thread_codes)));
+            join_handlers.push(task::spawn(crate::time::fetch_index_info(each_thread_codes)));
             each_thread_codes = Vec::<String>::with_capacity(330);
             count = 0;
         }
     }
-    executor::block_on(async {
+    task::block_on(async {
         for item in join_handlers {
             item.await;
         }

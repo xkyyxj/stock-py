@@ -3,6 +3,7 @@ use sqlx::{MySql};
 use futures::channel::mpsc::{ Sender };
 use futures::{SinkExt};
 use sqlx::pool::PoolConnection;
+use async_std::task;
 use crate::results::{ InLow, DBResult };
 use std::collections::HashMap;
 use chrono::Local;
@@ -12,8 +13,7 @@ pub async fn calculate_in_low() -> bool {
     fn temp(mut conn: PoolConnection<MySql>,
             stock_codes: Vec<String>, mut tx: Sender<u32>,
             code2name_map: HashMap<String, String>) {
-        let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        tokio_runtime.spawn(calculate_in_low_s(conn, stock_codes, tx, code2name_map));
+        task::spawn(calculate_in_low_s(conn, stock_codes, tx, code2name_map));
     }
     super::calculate_wrapper(temp).await
 }

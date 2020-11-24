@@ -1,11 +1,7 @@
-use hyper::Client;
 use chrono::prelude::*;
 use std::ops::Add;
 use async_std::task::sleep;
 use chrono::Duration;
-use hyper::body::Buf;
-use encoding::{DecoderTrap, Encoding};
-use encoding::all::GBK;
 use crate::results::{TimeIndexInfo, TimeIndexBaseInfo, TimeIndexBatchInfo, DBResult};
 use std::str::FromStr;
 use crate::cache::AsyncRedisOperation;
@@ -32,8 +28,6 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
         target_string = target_string.add(item.get(..6).unwrap());
         target_string = target_string.add(",");
     }
-    // Still inside `async fn main`...
-    let client = Client::new();
 
     let local: DateTime<Local> = Local::now();
     let year = local.date().year();
@@ -53,23 +47,17 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
         let curr_time = Local::now();
         if (curr_time >= _up_begin_time && curr_time <= _up_end_time) ||
             (curr_time >= _down_begin_time && curr_time <= _down_end_time) {
-            // Parse an `http::Uri`...
-            let uri = target_string.parse().unwrap();
-            // Await the response...
-            if let Ok(resp) = client.get(uri).await {
-                if let Ok(content_rst) = hyper::body::to_bytes(resp.into_body()).await {
-                    let ret_val = GBK.decode(content_rst.bytes(), DecoderTrap::Strict);
-                    split_multi_info(ret_val.unwrap(), &mut redis_ope).await;
+            let mut res = surf::get(target_string.as_str()).await.unwrap();
+            let ret_val = res.body_string().await.unwrap();
+            split_multi_info(ret_val, &mut redis_ope).await;
 
-                    // 每两秒获取一次
-                    let two_seconds_duration = Duration::seconds(crate::config::INDEX_INFO_FETCH_DELTA);
-                    let fetch_finish_time = Local::now();
-                    let fetch_cost_time = fetch_finish_time - curr_time;
-                    let real_sleep_time = two_seconds_duration - fetch_cost_time;
-                    if real_sleep_time.num_nanoseconds().unwrap() > 0 {
-                        sleep(real_sleep_time.to_std().unwrap()).await;
-                    }
-                }
+            // 每两秒获取一次
+            let two_seconds_duration = Duration::seconds(crate::config::INDEX_INFO_FETCH_DELTA);
+            let fetch_finish_time = Local::now();
+            let fetch_cost_time = fetch_finish_time - curr_time;
+            let real_sleep_time = two_seconds_duration - fetch_cost_time;
+            if real_sleep_time.num_nanoseconds().unwrap() > 0 {
+                sleep(real_sleep_time.to_std().unwrap()).await;
             }
         }
 

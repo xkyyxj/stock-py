@@ -4,6 +4,7 @@ use futures::channel::mpsc::{ Sender };
 use futures::{SinkExt};
 use sqlx::pool::PoolConnection;
 use std::collections::HashMap;
+use async_std::task;
 use chrono::Local;
 use crate::results::{AirCastle, DBResult};
 
@@ -12,8 +13,7 @@ pub async fn calculate_air_castle() -> bool {
     fn temp(mut conn: PoolConnection<MySql>,
             stock_codes: Vec<String>, mut tx: Sender<u32>,
             code2name_map: HashMap<String, String>) {
-        let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        tokio_runtime.spawn(calculate_air_castle_s(conn, stock_codes, tx, code2name_map));
+        task::spawn(calculate_air_castle_s(conn, stock_codes, tx, code2name_map));
     }
     super::calculate_wrapper(temp).await
 }

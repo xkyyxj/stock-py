@@ -27,7 +27,6 @@ pub async fn calculate_wrapper(target_function: fn(PoolConnection<MySql>, Vec<St
 
     // buffer的大小是4000会不会有问题？
     let (mut tx, rx) = mpsc::channel::<u32>(4000);
-    let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
 
     let mut count = 0;
     let mut grp_count = 0;

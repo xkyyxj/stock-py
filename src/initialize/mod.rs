@@ -5,15 +5,12 @@ use sqlx::{MySql, Pool};
 use redis::Client;
 use crate::config;
 use std::collections::HashMap;
-use tokio::runtime::{Runtime, Builder};
 use crate::config::Config;
 use crate::utils::Taskbar;
 
 pub(crate) static MYSQL_POOL: OnceCell<Pool<MySql>> = OnceCell::new();
 
 pub(crate) static REDIS_POOL: OnceCell<Client> = OnceCell::new();
-
-pub(crate) static TOKIO_RUNTIME: OnceCell<Runtime> = OnceCell::new();
 
 pub(crate) static CONFIG_INFO: OnceCell<Config> = OnceCell::new();
 
@@ -28,17 +25,6 @@ pub fn init(cx: HashMap<String, String>) {
     // 初始化基本配置项
     let config_info = Config::new();
     CONFIG_INFO.set(config_info).unwrap();
-
-    // 初始化tokio运行时
-    let runtime = Builder::new_multi_thread()
-        .enable_all()
-        // .worker_threads(4)
-        .max_threads(512)
-        .thread_name("my-custom-name")
-        .thread_stack_size(3 * 1024 * 1024)
-        .build()
-        .unwrap();
-    TOKIO_RUNTIME.set(runtime).unwrap();
 
     // 初始化数据库连接池
     let mysql_init = async {

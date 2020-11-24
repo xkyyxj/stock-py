@@ -1,6 +1,7 @@
 use crate::sql;
 use crate::time::fetch_index_info;
 use futures::executor;
+use async_std::{task};
 use pyo3::prelude::*;
 use sqlx::Row;
 use crate::cache::AsyncRedisOperation;
@@ -27,7 +28,6 @@ impl TimeFetcher {
         }
 
         let columns = vec!["ts_code"];
-        let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
         let stock_codes_rows = executor::block_on(sql::query_stock_list(&columns, " where market in ('主板', '中小板')")).unwrap();
         let mut count = 0;
         let mut each_thread_codes = Vec::<String>::with_capacity(EACH_THREAD_FETCH_NUM);
@@ -37,7 +37,7 @@ impl TimeFetcher {
             count = count + 1;
             if count == EACH_THREAD_FETCH_NUM {
                 println!("thread num!!!!!");
-                tokio_runtime.spawn(fetch_index_info(each_thread_codes));
+                task::spawn(fetch_index_info(each_thread_codes));
                 each_thread_codes = Vec::<String>::with_capacity(EACH_THREAD_FETCH_NUM);
                 count = 0;
             }
@@ -49,7 +49,7 @@ impl TimeFetcher {
     /// 清空redis缓存
     pub(crate) fn clear(&self) {
         let columns = vec!["ts_code"];
-        executor::block_on(async {
+        task::block_on(async {
             let mut redis_ope = AsyncRedisOperation::new().await;
             let all_rows = sql::query_stock_list(&columns, " where market in ('主板', '中小板')").await.unwrap();
             for item in &all_rows {

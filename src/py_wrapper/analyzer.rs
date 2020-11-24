@@ -4,6 +4,7 @@ use pyo3::prelude::*;
 use std::rc::Rc;
 use async_std::sync::Arc;
 use std::future::Future;
+use async_std::task;
 use futures::channel::mpsc;
 use futures::channel::mpsc::Sender;
 use futures::StreamExt;
@@ -33,8 +34,7 @@ impl HistoryDownAna {
         if self.is_started {
             return
         }
-        let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        tokio_runtime.spawn(history_down_wrapper());
+        task::spawn(history_down_wrapper());
         self.is_started = true;
     }
 }

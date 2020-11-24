@@ -2,6 +2,7 @@ use crate::sql;
 use crate::time::fetch_index_info;
 use futures::executor;
 use pyo3::prelude::*;
+use async_std::task;
 use sqlx::Row;
 use crate::cache::AsyncRedisOperation;
 use once_cell::sync::OnceCell;
@@ -27,8 +28,7 @@ impl ShortTimeStrategy {
             return
         }
 
-        let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        tokio_runtime.spawn(async {
+        task::spawn(async {
             let mut select = ShortTimeSelect::new().await;
             select.select().await;
         });
@@ -39,7 +39,7 @@ impl ShortTimeStrategy {
     /// 清空redis缓存
     pub(crate) fn clear(&self) {
         let columns = vec!["ts_code"];
-        executor::block_on(async {
+        task::block_on(async {
             let mut redis_ope = AsyncRedisOperation::new().await;
             let all_rows = sql::query_stock_list(&columns, " where market in ('主板', '中小板')").await.unwrap();
             for item in &all_rows {

@@ -3,6 +3,7 @@ use sqlx::MySql;
 use futures::channel::mpsc::Sender;
 use std::collections::HashMap;
 use chrono::Local;
+use async_std::task;
 use crate::sql;
 use crate::utils::time_utils;
 
@@ -11,8 +12,7 @@ pub async fn calculate_max_win() -> bool {
     fn temp(mut conn: PoolConnection<MySql>,
             stock_codes: Vec<String>, mut tx: Sender<u32>,
             code2name_map: HashMap<String, String>) {
-        let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        tokio_runtime.spawn(calculate_max_win_s(conn, stock_codes, tx, code2name_map));
+        task::spawn(calculate_max_win_s(conn, stock_codes, tx, code2name_map));
     }
     super::calculate_wrapper(temp).await
 }

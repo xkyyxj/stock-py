@@ -2,6 +2,7 @@ use crate::sql;
 use sqlx::{MySql};
 use futures::channel::mpsc::{ Sender };
 use futures::{SinkExt};
+use async_std::task;
 use sqlx::pool::PoolConnection;
 use std::collections::HashMap;
 use chrono::Local;
@@ -10,8 +11,7 @@ pub async fn calculate_big_wave() -> bool {
     fn temp(mut conn: PoolConnection<MySql>,
             stock_codes: Vec<String>, mut tx: Sender<u32>,
             code2name_map: HashMap<String, String>) {
-        let tokio_runtime = crate::initialize::TOKIO_RUNTIME.get().unwrap();
-        tokio_runtime.spawn(calculate_big_wave_s(conn, stock_codes, tx, code2name_map));
+        task::spawn(calculate_big_wave_s(conn, stock_codes, tx, code2name_map));
     }
     super::calculate_wrapper(temp).await
 }
