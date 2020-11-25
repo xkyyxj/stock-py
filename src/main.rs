@@ -12,42 +12,14 @@ mod utils;
 mod selector;
 mod simulate;
 
-use chrono::{DateTime, Local, FixedOffset, TimeZone};
-
-
-
-use sqlx::mysql::{MySqlArguments};
-use async_std::task;
-
-use futures::task::{SpawnExt};
-
-use once_cell::sync::OnceCell;
-use sqlx::mysql::MySqlRow;
-
-
-use sqlx::{Row, MySql, Pool};
-use sqlx::query::Query;
-use sqlx::pool::PoolOptions;
-
-
-use std::str::FromStr;
 use std::collections::HashMap;
-use std::thread::sleep;
+use crate::py_wrapper::ShortTimeStrategy;
+use chrono::{Local, DateTime};
 use std::time::Duration;
-use crate::results::{DBResult, HistoryDown, StockBaseInfo};
-use std::ops::Add;
-use futures::future::{Future, BoxFuture};
-use redis::{AsyncCommands, Commands};
-use crate::time::{fetch_index_info, INDEX_SUFFIX};
-use crate::utils::{Taskbar};
-use crate::results::{AirCastle};
-use std::thread;
-use crate::py_wrapper::{HistoryDownAna, TimeFetcher, ShortTimeStrategy};
-use crate::analyzer::HistoryDownAnalyzer;
-use crate::cache::AsyncRedisOperation;
-use crate::calculate::calculate_air_castle;
-use crate::selector::ShortTimeSelect;
-use async_std::task::JoinHandle;
+use std::thread::sleep;
+use std::str::FromStr;
+use async_std::task;
+use calculate::calculate_air_castle;
 
 fn air_castle_cal() {
     let ts_codes = vec![String::from("000001.SZ")];
