@@ -16,17 +16,17 @@ use crate::simulate::sync_short_history;
 
 //-------------------短期筛选结果集--------------------------------------------------------------------
 pub struct SingleShortTimeSelectResult {
-    pub(crate) ts_code: String,
-    pub(crate) ts_name: String,
-    pub(crate) curr_price: f64,
-    pub(crate) level: i64,              // 评分：0-100分
-    pub(crate) source: String,          // 来源系统，通过ema选定还是什么其他指标
-    pub(crate) level_pct: f64,          // 得分的百分比
-    pub(crate) line_style: i32,         // 分时线形态：-1 一直下降；0 经历过拐点(先下降后上升)；1 先上升后下降；2 一直上涨；3 一直一个价;4 反复波动
+    pub ts_code: String,
+    pub ts_name: String,
+    pub curr_price: f64,
+    pub level: i64,              // 评分：0-100分
+    pub source: String,          // 来源系统，通过ema选定还是什么其他指标
+    pub level_pct: f64,          // 得分的百分比
+    pub line_style: i32,         // 分时线形态：-1 一直下降；0 经历过拐点(先下降后上升)；1 先上升后下降；2 一直上涨；3 一直一个价;4 反复波动
 }
 
 impl SingleShortTimeSelectResult {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         SingleShortTimeSelectResult {
             ts_code: "".to_string(),
             ts_name: "".to_string(),
@@ -38,7 +38,7 @@ impl SingleShortTimeSelectResult {
         }
     }
 
-    pub(crate) async fn insert_to_db(&self, curr_time: &String, conn: &mut PoolConnection<MySql>) {
+    pub async fn insert_to_db(&self, curr_time: &String, conn: &mut PoolConnection<MySql>) {
         let mut query = sqlx::query("insert into short_select_in_time(ts_code, in_price, in_time, source, level, line_style)\
         values(?,?,?,?,?,?)");
         query = query.bind(self.ts_code.clone());
@@ -71,23 +71,23 @@ impl Clone for SingleShortTimeSelectResult {
 }
 
 pub struct ShortTimeSelectResult {
-    pub(crate) select_rst: Vec<SingleShortTimeSelectResult>,
-    pub(crate) ts: DateTime<Local>,
+    pub select_rst: Vec<SingleShortTimeSelectResult>,
+    pub ts: DateTime<Local>,
 }
 
 impl ShortTimeSelectResult {
 
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         ShortTimeSelectResult { select_rst: vec![], ts: Local::now() }
     }
 
-    pub(crate) fn add_selected(&mut self, info : SingleShortTimeSelectResult) {
+    pub fn add_selected(&mut self, info : SingleShortTimeSelectResult) {
         self.select_rst.push(info);
     }
 
     /// 合并结果用于多个不同的选择策略的合并，蒋选择结果合并到最终结果当中需要用到append方法
     /// 两个结果的合并，重复的结果得分的简单相加，只在一方存在的结果添加到最终结果集里面
-    pub(crate) fn merge(&mut self, other: &ShortTimeSelectResult) {
+    pub fn merge(&mut self, other: &ShortTimeSelectResult) {
         let mut only_one = Vec::<SingleShortTimeSelectResult>::new();
         for other_item in &other.select_rst {
             let mut contain = false;
@@ -113,7 +113,7 @@ impl ShortTimeSelectResult {
 
     /// 蒋某次选择结果汇总到最终结果中来
     /// @return 返回所有在这一个append当中可买入的股票
-    pub(crate) fn append(&mut self, other: &ShortTimeSelectResult) -> Vec<String> {
+    pub fn append(&mut self, other: &ShortTimeSelectResult) -> Vec<String> {
         let mut ret_rst = Vec::<String>::new();
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let short_time_buy_level = config.short_buy_level;
@@ -158,7 +158,7 @@ impl ShortTimeSelectResult {
     }
 
     /// 蒋结果同步到数据库当中去
-    pub(crate) async fn sync_to_db(&self) {
+    pub async fn sync_to_db(&self) {
         if self.select_rst.is_empty() {
             return;
         }
@@ -172,14 +172,14 @@ impl ShortTimeSelectResult {
     }
 
     /// 从数据库当中删除所有的结果
-    pub(crate) async fn delete() {
+    pub async fn delete() {
         let pool = crate::initialize::MYSQL_POOL.get().unwrap();
         let sql = "delete from short_select_in_time;";
         sqlx::query(sql).execute(pool);
     }
 
     /// 从数据库当中查询所有的结果
-    pub(crate) async fn query_all() -> Self {
+    pub async fn query_all() -> Self {
         let pool = crate::initialize::MYSQL_POOL.get().unwrap();
         let all_rows = sqlx::query("select * from short_select_intime").
             fetch_all(pool).await.unwrap();
@@ -219,7 +219,7 @@ pub struct ShortTimeSelect {
 }
 
 impl ShortTimeSelect {
-    pub(crate) async fn new() -> Self {
+    pub async fn new() -> Self {
         let mut ret_val = ShortTimeSelect {
             ema_select: EMASelect::new().await,
             sleep_check: SleepDuringStop::new(),
@@ -232,7 +232,7 @@ impl ShortTimeSelect {
         self.ema_select.initialize().await;
     }
 
-    pub(crate) async fn select(&mut self) {
+    pub async fn select(&mut self) {
         // 第零步：获取初始化的配置信息
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let ana_delta_time = config.analyze_time_delta;

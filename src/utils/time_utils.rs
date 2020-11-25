@@ -14,7 +14,7 @@ pub struct SleepDuringStop {
 }
 
 impl SleepDuringStop {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         let local: DateTime<Local> = Local::now();
         let year = local.date().year();
         let month = local.date().month();
@@ -31,7 +31,7 @@ impl SleepDuringStop {
         }
     }
 
-    pub(crate) async fn check_sleep(&mut self, curr_time: &DateTime<Local>) {
+    pub async fn check_sleep(&mut self, curr_time: &DateTime<Local>) {
         // let curr_time: DateTime<Local> = Local::now();
         if (curr_time >= &self._up_begin_time && curr_time <= &self._up_end_time) ||
             (curr_time >= &self._down_begin_time && curr_time <= &self._down_end_time) {
@@ -66,7 +66,7 @@ impl SleepDuringStop {
     /// 查询调用方法的传入时间是不是夜间：
     /// 当天早盘开盘之钱或者下午闭市之后 -> 返回true
     /// 其他时间点 -> 返回false
-    pub(crate) fn check_curr_night_rest(&self, curr_time: &DateTime<Local>) -> bool {
+    pub fn check_curr_night_rest(&self, curr_time: &DateTime<Local>) -> bool {
         curr_time > &self._down_end_time || curr_time < &self._up_begin_time
     }
 }

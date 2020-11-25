@@ -8,13 +8,13 @@ use std::collections::HashMap;
 use crate::config::Config;
 use crate::utils::Taskbar;
 
-pub(crate) static MYSQL_POOL: OnceCell<Pool<MySql>> = OnceCell::new();
+pub static MYSQL_POOL: OnceCell<Pool<MySql>> = OnceCell::new();
 
-pub(crate) static REDIS_POOL: OnceCell<Client> = OnceCell::new();
+pub static REDIS_POOL: OnceCell<Client> = OnceCell::new();
 
-pub(crate) static CONFIG_INFO: OnceCell<Config> = OnceCell::new();
+pub static CONFIG_INFO: OnceCell<Config> = OnceCell::new();
 
-pub(crate) static TASKBAR_TOOL: OnceCell<Taskbar> = OnceCell::new();
+pub static TASKBAR_TOOL: OnceCell<Taskbar> = OnceCell::new();
 
 pub fn init(cx: HashMap<String, String>) {
     let mut final_rst = true;
