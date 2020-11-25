@@ -8,8 +8,8 @@ use std::collections::HashMap;
 use chrono::Local;
 
 pub async fn calculate_big_wave() -> bool {
-    fn temp(mut conn: PoolConnection<MySql>,
-            stock_codes: Vec<String>, mut tx: Sender<u32>,
+    fn temp(conn: PoolConnection<MySql>,
+            stock_codes: Vec<String>, tx: Sender<u32>,
             code2name_map: HashMap<String, String>) {
         task::spawn(calculate_big_wave_s(conn, stock_codes, tx, code2name_map));
     }

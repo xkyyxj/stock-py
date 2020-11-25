@@ -3,7 +3,7 @@ use sqlx::{MySql, Row};
 use sqlx::mysql::{MySqlArguments, MySqlRow};
 use sqlx::query::Query;
 use crate::sql;
-use crate::results::Elided;
+
 
 //TODO 这里面的东西可以再拆分一下，太乱了
 
@@ -67,7 +67,7 @@ impl DBResult for InLow {
         query.bind(self.in_price)
     }
 
-    fn query(where_part: Option<String>) -> Vec<Box<InLow>> {
+    fn query(_where_part: Option<String>) -> Vec<Box<InLow>> {
         // TODO -- un finished
         unimplemented!()
     }

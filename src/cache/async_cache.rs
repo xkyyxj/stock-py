@@ -1,6 +1,6 @@
 use redis::{AsyncCommands, ToRedisArgs, FromRedisValue};
 use redis::aio::Connection;
-use futures::executor;
+
 
 pub struct AsyncRedisOperation {
     connection: Connection,
@@ -9,7 +9,7 @@ pub struct AsyncRedisOperation {
 impl AsyncRedisOperation {
     pub(crate) async fn new() -> Self {
         let client = crate::initialize::REDIS_POOL.get().unwrap();
-        let mut connection = client.get_async_connection().await.unwrap();
+        let connection = client.get_async_connection().await.unwrap();
         AsyncRedisOperation {
             connection
         }

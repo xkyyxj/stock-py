@@ -20,16 +20,9 @@ use std::thread::sleep;
 use std::str::FromStr;
 use async_std::task;
 use calculate::calculate_air_castle;
-
-fn air_castle_cal() {
-    let ts_codes = vec![String::from("000001.SZ")];
-    let join_handler = task::spawn(async{
-        calculate_air_castle().await;
-    });
-    task::block_on(async {
-        join_handler.await;
-    });
-}
+use crate::calculate::calculate_air_castle_s;
+use futures::channel::mpsc;
+use crate::simulate::sync_short_history;
 
 fn main() {
     let mut map = HashMap::<String, String>::new();
@@ -44,9 +37,24 @@ fn main() {
     // let mut history_down_ana = HistoryDownAna { is_started: false };
     // history_down_ana.__call__();
 
+    // task::block_on(async {
+    //     let pool = crate::initialize::MYSQL_POOL.get().unwrap();
+    //     let conn = pool.acquire().await.unwrap();
+    //     let ts_codes = vec![String::from("601702.SH")];
+    //     let mut map = HashMap::<String, String>::new();
+    //     map.insert(String::from("601702.SH"), String::from("hhedada"));
+    //     let (mut tx, rx) = mpsc::channel::<u32>(4000);
+    //     calculate_air_castle_s(conn, ts_codes, tx, map).await;
+    // });
+    // task::block_on(calculate_air_castle());
+    task::block_on(async {
+        let local_time = Local::now();
+        sync_short_history(&local_time).await;
+    });
 
-    let mut short_time_select = ShortTimeStrategy::new();
-    short_time_select.__call__();
+    // 短期哦选股的验证逻辑
+    // let mut short_time_select = ShortTimeStrategy::new();
+    // short_time_select.__call__();
 
     match DateTime::<Local>::from_str("2020-11-02T15:00:03 +08:00") {
         Ok(_val) => println!("ok， val is {}", _val),

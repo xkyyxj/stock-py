@@ -81,7 +81,7 @@ pub fn curr_date_str(format: &str) -> String {
 }
 
 pub fn curr_date_before_days(days: i64) -> DateTime<Local> {
-    let mut date_time = Local::now();
+    let date_time = Local::now();
     let duration = Duration::days(days);
     date_time.sub(duration)
 }

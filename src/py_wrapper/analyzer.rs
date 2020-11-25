@@ -1,13 +1,13 @@
 use crate::analyzer::HistoryDownAnalyzer;
-use pyo3::types::{PyFunction, PyTuple};
+
 use pyo3::prelude::*;
-use std::rc::Rc;
-use async_std::sync::Arc;
-use std::future::Future;
+
+
+
 use async_std::task;
-use futures::channel::mpsc;
-use futures::channel::mpsc::Sender;
-use futures::StreamExt;
+
+
+
 
 async fn history_down_wrapper() {
     let mut real_analyzer = HistoryDownAnalyzer::new();

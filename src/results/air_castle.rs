@@ -1,4 +1,4 @@
-use crate::results::{DBResult, Elided};
+use crate::results::{DBResult};
 use sqlx::query::Query;
 use sqlx::{MySql, Row};
 use sqlx::mysql::MySqlArguments;
@@ -14,7 +14,7 @@ pub struct AirCastle {
     pub(crate) up_days: i64,
     pub(crate) up_pct: f64,
     pub(crate) ave_day_up_pct: f64,
-
+    pub(crate) next_five_day_win: f64,
 }
 
 impl DBResult for AirCastle {
@@ -26,7 +26,8 @@ impl DBResult for AirCastle {
             in_price: 0.0,
             up_days: 0,
             up_pct: 0.0,
-            ave_day_up_pct: 0.0
+            ave_day_up_pct: 0.0,
+            next_five_day_win: 0.0
         }
     }
 
@@ -59,7 +60,7 @@ impl DBResult for AirCastle {
         sql::common_query(final_sql.as_ref(), |rows| {
             for row in rows {
                 let mut temp_rst = AirCastle::new();
-                let mut temp_str: String = row.get("ts_code");
+                let temp_str: String = row.get("ts_code");
                 temp_rst.pk_air_castle = row.get("pk_air_castle");
                 temp_rst.ts_code = temp_str;
                 temp_rst.in_price = row.get("in_price");

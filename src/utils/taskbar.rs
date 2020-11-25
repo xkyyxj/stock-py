@@ -4,11 +4,11 @@ use winapi::um::libloaderapi::GetModuleHandleW;
 use winapi::_core::{ptr, mem};
 use winapi::um::winuser::{WS_SYSMENU, WS_OVERLAPPED, IDI_APPLICATION, LoadIconW, WNDCLASSEXW, DefWindowProcW, RegisterClassExW, CreateWindowExW, CW_USEDEFAULT, UpdateWindow, DestroyWindow, UnregisterClassW, WM_USER};
 use winapi::um::shellapi::{NOTIFYICONDATAW, NOTIFYICONDATAW_u, NIF_ICON, NIF_TIP, Shell_NotifyIconW, NIM_ADD, NIM_MODIFY, NIIF_INFO, NIF_INFO, NIM_DELETE};
-use std::{thread, time};
+
 use winapi::shared::minwindef::HMODULE;
 use winapi::shared::windef::HWND;
-use std::ffi::OsString;
-use std::os::windows::prelude::*;
+
+
 use std::os::windows::ffi::OsStrExt;
 
 static CLASS_NAME: &str = "Taskbar01";
@@ -40,7 +40,7 @@ impl Taskbar {
             wc.cbWndExtra = 0;
             wc.hIconSm = icon;
             wc.lpfnWndProc = Some(DefWindowProcW);
-            let class_atom = RegisterClassExW(&wc);
+            let _class_atom = RegisterClassExW(&wc);
             // class_atom as u32
             let hwnd = CreateWindowExW(0, wc.lpszClassName, null_str.as_ptr(), style, 0, 0, CW_USEDEFAULT,
                                        CW_USEDEFAULT,
@@ -59,7 +59,7 @@ impl Taskbar {
                 title_arr[i] = title_ptr[i];
             }
             let mut tip_arr: [u16; 128] = [0; 128];
-            let mut tip_ptr: Vec<u16> = OsStr::new("Tooltip").encode_wide().chain(once(0)).collect();
+            let tip_ptr: Vec<u16> = OsStr::new("Tooltip").encode_wide().chain(once(0)).collect();
             for i in 0..tip_ptr.len() {
                 // println!("{}", tip_ptr[i] as char);
                 tip_arr[i] = tip_ptr[i];
@@ -105,7 +105,7 @@ impl Taskbar {
                 title_arr[i] = title_ptr[i];
             }
             let mut tip_arr: [u16; 128] = [0; 128];
-            let mut tip_ptr: Vec<u16> = OsStr::new("Tooltip").encode_wide().chain(once(0)).collect();
+            let tip_ptr: Vec<u16> = OsStr::new("Tooltip").encode_wide().chain(once(0)).collect();
             for i in 0..tip_ptr.len() {
                 // println!("{}", tip_ptr[i] as char);
                 tip_arr[i] = tip_ptr[i];
@@ -118,7 +118,7 @@ impl Taskbar {
             params.szInfoTitle = title_arr;
             params.szTip = tip_arr;
             params.hIcon = icon;
-            let flags = NIF_ICON | NIF_TIP;
+            let _flags = NIF_ICON | NIF_TIP;
             params.uID = WM_USER + 20;
             let flags = NIF_ICON | NIF_TIP;
             params.uFlags = flags;

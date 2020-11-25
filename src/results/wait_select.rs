@@ -1,4 +1,4 @@
-use crate::results::{DBResult, Elided};
+use crate::results::{DBResult};
 use sqlx::query::Query;
 use sqlx::{MySql, Row};
 use sqlx::mysql::MySqlArguments;

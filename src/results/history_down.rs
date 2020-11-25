@@ -1,9 +1,9 @@
 use sqlx::query::Query;
 use sqlx::{MySql, Row};
 use sqlx::mysql::{MySqlArguments, MySqlRow};
-use crate::results::{DBResult, Elided};
+use crate::results::{DBResult};
 use crate::sql;
-use std::ops::Add;
+
 
 pub struct HistoryDown {
     pub(crate) pk_history_down: i64,        // 主键
@@ -17,7 +17,7 @@ pub struct HistoryDown {
 
 fn process_single_row_for_history_down(row: &MySqlRow) -> HistoryDown {
     let mut temp_rst = HistoryDown::new();
-    let mut temp_str: String = row.get("ts_code");
+    let temp_str: String = row.get("ts_code");
     temp_rst.ts_code = temp_str;
     temp_rst.his_down_price = row.get::<'_, f64, &str>("his_down_price");
     temp_rst.in_price = row.get::<'_, f64, &str>("in_price");

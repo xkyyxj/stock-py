@@ -1,11 +1,11 @@
 use crate::sql;
-use crate::time::fetch_index_info;
-use futures::executor;
+
+
 use pyo3::prelude::*;
 use async_std::task;
 use sqlx::Row;
 use crate::cache::AsyncRedisOperation;
-use once_cell::sync::OnceCell;
+
 use crate::selector::ShortTimeSelect;
 
 #[pyclass]

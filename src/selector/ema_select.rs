@@ -1,6 +1,6 @@
-use crate::results::TimeIndexBaseInfo;
-use futures::Future;
-use std::pin::Pin;
+
+
+
 use crate::sql;
 use std::collections::HashMap;
 use sqlx::Row;
@@ -103,7 +103,7 @@ impl EMASelect {
             let real_redis_info = redis_info.unwrap();
             // -1 一直下降；0 经历过拐点(先下降后上升)；1 先上升后下降；2 一直上涨；3 一直一个价;4 反复波动
             let mut line_type = 3;
-            let mut pre_price = real_redis_info.get(0).unwrap().curr_price;
+            let pre_price = real_redis_info.get(0).unwrap().curr_price;
             for item in &real_redis_info {
                 let curr_price = item.curr_price;
                 line_type = EMASelect::judge_next_state(line_type, pre_price, curr_price);

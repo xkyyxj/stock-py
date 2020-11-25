@@ -1,16 +1,16 @@
-use crate::results::TimeIndexBaseInfo;
+
 use crate::selector::ema_select::{EMASelect};
-use futures::{Future, executor};
-use std::pin::Pin;
+
+
 use crate::utils::time_utils::SleepDuringStop;
 use chrono::{DateTime, Local, Duration};
 use std::sync::mpsc;
 use async_std::task::sleep;
 use crate::results::DBResult;
-use crate::sql;
-use sqlx::query::Query;
+
+
 use sqlx::{MySql, Row};
-use sqlx::mysql::MySqlArguments;
+
 use sqlx::pool::PoolConnection;
 use crate::simulate::sync_short_history;
 
@@ -241,16 +241,14 @@ impl ShortTimeSelect {
         loop {
             let (tx, rx) = mpsc::channel::<ShortTimeSelectResult>();
             let curr_time = Local::now();
-            sync_short_history(curr_time).await;
-            // FIXME --　别忘了取消注释
-            //self.sleep_check.check_sleep(&curr_time).await;
+            sync_short_history(&curr_time).await;
+            self.sleep_check.check_sleep(&curr_time).await;
             let future = self.ema_select.select(tx);
             futures::join!(future);
 
             let mut temp_result = ShortTimeSelectResult::new();
             for received  in rx {
                 // 获取结果
-                println!("recerved length is {}", received.select_rst.len());
                 temp_result.merge(&received);
             }
             let new_buy_stock = self.all_result.append(&temp_result);
@@ -281,7 +279,7 @@ impl ShortTimeSelect {
     }
 
     /// 处理策略：如果是
-    fn process_ana_result(&mut self, result: ShortTimeSelectResult) {
+    fn process_ana_result(&mut self, _result: ShortTimeSelectResult) {
 
     }
 }

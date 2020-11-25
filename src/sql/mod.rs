@@ -1,6 +1,6 @@
 use std::ops::Add;
 use sqlx::{Row, Error, MySql};
-use sqlx::mysql::MySqlRow;
+use sqlx::mysql::{MySqlRow, MySqlDone};
 use async_std::task;
 use crate::results::{StockBaseInfo, DBResult};
 use sqlx::pool::PoolConnection;
@@ -16,8 +16,26 @@ pub fn common_query(sql: &str, mut f: impl FnMut(&Vec<MySqlRow>)) {
 /// 通用查询异步版
 pub async fn async_common_query(sql: &str, mut f: impl FnMut(&Vec<MySqlRow>)) {
     let pool = crate::initialize::MYSQL_POOL.get().unwrap();
-    if let Ok(all_rows) = sqlx::query(sql).fetch_all(pool).await {
-        f(&all_rows);
+    match sqlx::query(sql).fetch_all(pool).await {
+        Ok(all_rows) => {
+            f(&all_rows);
+        }
+        Err(err) => {
+            println!("err is {}", format!("{:?}", err));
+        }
+    }
+}
+
+/// 通常删除或者更新逻辑模板，没有回到函数
+/// 返回值：true为执行成功，false为报错
+pub async fn async_common_exe(sql: &str) -> bool {
+    let pool = crate::initialize::MYSQL_POOL.get().unwrap();
+    match sqlx::query(sql).execute(pool).await {
+        Ok(_) => { true }
+        Err(err) => {
+            println!("err is {}", format!("{:?}", err));
+            false
+        }
     }
 }
 

@@ -10,8 +10,8 @@ use chrono::Local;
 
 /// 坚实基础理论：低值，估价偏低，巴菲特宣传的思想对吧
 pub async fn calculate_history_down() -> bool {
-    fn temp(mut conn: PoolConnection<MySql>,
-            stock_codes: Vec<String>, mut tx: Sender<u32>,
+    fn temp(conn: PoolConnection<MySql>,
+            stock_codes: Vec<String>, tx: Sender<u32>,
             code2name_map: HashMap<String, String>) {
         task::spawn(calculate_history_down_s(conn, stock_codes, tx, code2name_map));
     }
@@ -25,11 +25,11 @@ pub async fn calculate_history_down() -> bool {
 /// 2.
 async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
                             stock_codes: Vec<String>, mut tx: Sender<u32>,
-                            code2name_map: HashMap<String, String>) {
+                            _code2name_map: HashMap<String, String>) {
     let last_days = crate::initialize::CONFIG_INFO.get().unwrap().min_history_down_days;
     let min_up_pct = crate::initialize::CONFIG_INFO.get().unwrap().min_history_down_up_pct;
     let date_time = Local::now();
-    let curr_date_str = date_time.format("%Y%m%d").to_string();
+    let _curr_date_str = date_time.format("%Y%m%d").to_string();
     for item in stock_codes {
         // FIXME -- 此处写死了一个日期？？？？？？？？？？
         let all_vos = sql::query_stock_base_info_a_with_conn(

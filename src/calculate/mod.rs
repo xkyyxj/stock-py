@@ -1,14 +1,12 @@
-mod calculate_low;
 mod calculate_big_wave;
 mod calculate_max_win;
 mod calculate_history_down;
 mod calculate_steady;
 mod calculate_air_castle;
 
-pub use calculate_low::calculate_in_low;
 pub use calculate_max_win::calculate_max_win;
 pub use calculate_history_down::calculate_history_down;
-pub use calculate_air_castle::calculate_air_castle;
+pub use calculate_air_castle::{calculate_air_castle, calculate_air_castle_s};
 use crate::sql;
 use std::collections::HashMap;
 use futures::channel::mpsc;
@@ -56,8 +54,8 @@ pub async fn calculate_wrapper(target_function: fn(PoolConnection<MySql>, Vec<St
     }
     else {
         tx.send(1);
-        tx.flush().await;
-        tx.close().await;
+        tx.flush().await.ok();
+        tx.close().await.ok();
     }
     grp_count = grp_count + 1;
 

@@ -1,7 +1,7 @@
 use crate::cache::AsyncRedisOperation;
 use crate::results::{HistoryDown, DBResult, TimeIndexBatchInfo, StockBaseInfo, WaitSelect, BoxStyle};
 use std::collections::HashMap;
-use crate::sql;
+
 use async_std::task::sleep;
 use chrono::{Duration, Local};
 use futures::executor;
@@ -54,12 +54,12 @@ impl BoxStyleAnalyzer {
 
     pub(crate) async fn analyze(&mut self) {
         let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
-        let curr_time_str = crate::utils::time_utils::curr_date_str("%Y%m%d");
+        let _curr_time_str = crate::utils::time_utils::curr_date_str("%Y%m%d");
         loop {
-            let mut wait_select_stock = String::new();
+            let wait_select_stock = String::new();
             let curr_time = Local::now();
             self.sleep_check.check_sleep(&curr_time).await;
-            let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+            let _conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             for item in &self.box_style_vos {
                 // 第一步：从Redis缓存当中取出当前的实时数据，判定是否当前价格是否高于昨天的最高价
                 let mut redis_key = String::from(&item.ts_code);
@@ -76,7 +76,7 @@ impl BoxStyleAnalyzer {
                     continue;
                 }
 
-                let real_last_info = last_info.unwrap();
+                let _real_last_info = last_info.unwrap();
             }
 
             // 每两秒获取一次

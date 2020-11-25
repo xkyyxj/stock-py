@@ -1,8 +1,12 @@
-use chrono::{DateTime, Local, Datelike};
+use async_std::task;
+use chrono::{DateTime, Local};
 use crate::utils::time_utils::SleepDuringStop;
 use crate::selector::{ShortTimeSelectResult, SingleShortTimeSelectResult};
 use sqlx::pool::PoolConnection;
-use sqlx::MySql;
+use sqlx::{MySql, Row};
+use crate::utils::time_utils;
+use crate::sql;
+use sqlx::mysql::MySqlRow;
 
 pub struct SingleShortTimeHistory {
     pub(crate) ts_code: String,
@@ -34,13 +38,14 @@ impl From<&SingleShortTimeSelectResult> for SingleShortTimeHistory {
 
 impl SingleShortTimeHistory {
     pub(crate) async fn sync_to_db(&self, curr_time: &String, conn: &mut PoolConnection<MySql>) {
-        let mut query = sqlx::query("insert into short_time_history(ts_code, in_price, in_time, source, level)\
-        values(?,?,?,?,?)");
+        let mut query = sqlx::query("insert into short_time_history(ts_code, in_price, in_time, source, level, line_style)\
+        values(?,?,?,?,?,?)");
         query = query.bind(self.ts_code.clone());
         query = query.bind(self.in_price);
         query = query.bind(curr_time.clone());
         query = query.bind(self.source.clone());
         query = query.bind(self.level);
+        query = query.bind(self.line_style);
         match query.execute(conn).await {
             Ok(_) => {},
             Err(err) => {
@@ -83,15 +88,74 @@ impl ShortTimeHistory {
 /// 此程序应该在每个交易日结束的时候做一次，具有如下功效：
 /// 1. 将short_select_intime表里面的数据移动到short_time_history当中去
 /// 2. 对于超过交易日限制而没有发出卖出信号的股票，执行以下卖出逻辑，计算一下到期日的交易价格（以收盘价计）
-pub async fn sync_short_history(curr_time: DateTime<Local>) {
+pub async fn sync_short_history(curr_time: &DateTime<Local>) {
     // 第一步：判定是否已经到了交易日结束的时候了
     let time_check = SleepDuringStop::new();
-    if !time_check.check_curr_night_rest(&curr_time) {
+    if !time_check.check_curr_night_rest(curr_time) {
         return;
     }
 
-    // 第二步：开始将short_select_intime表里面的数据移动到short_time_history当中去
+    // 第二步：开始将short_select_in_time表里面的数据移动到short_time_history当中去
     let short_time_rst = ShortTimeSelectResult::query_all().await;
     let short_time_history = ShortTimeHistory::from(&short_time_rst);
     short_time_history.sync_to_db().await;
+
+    // 第三步：统计五天之内和七天之内的盈利百分比
+    // 首先查询出来进入时间大于5天的股票
+    let n_days_before = time_utils::curr_date_before_days_str(4, "%Y%m%d");
+    let mut query = String::from("select pk_short_history, in_price, ts_code, in_time ");
+    query = query + " from short_time_history where in_time <= '" + n_days_before.as_str() + "'";
+    sql::async_common_query(query.as_str(), |rows| {
+        for row in rows {
+            // 而后调用函数做计算，并更新数据库表格
+            let pk = row.get::<'_,i64, &str>("pk_short_history");
+            let ts_code = row.get("ts_code");
+            let in_time = row.get("in_time");
+            let in_price = row.get::<'_, f64, &str>("in_price");
+            // FIXME -- 此处新建了一个task，如果程序提前终止的话就跑不完了，不过似乎这个程序里面都是这种
+            task::spawn(cal_single_row(pk, ts_code, in_time, in_price));
+        }
+    }).await;
+}
+
+async fn cal_single_row(pk: i64, ts_code: String, in_time: String, in_price: f64) {
+    let mut sql = String::from("select close from stock_base_info where ts_code='");
+    sql = sql + ts_code.as_str() + "' and trade_date > '" + in_time.as_str() + "'";
+    sql = sql + " order by trade_date limit 20";
+    let mut close_val = Vec::<f64>::new();
+    sql::async_common_query(sql.as_str(), |rows| {
+        for row in rows {
+            close_val.push(row.get::<'_, f64, &str>("close"))
+        }
+    }).await;
+
+    let mut five_win = 0f64;
+    let mut seven_win = 0f64;
+    let mut update_five = false;
+    let mut update_seven = false;
+    if close_val.len() > 4 {
+        // 计算五日盈利（买入当天算第一天，第五天盈利如何）
+        let target_close = close_val.get(3).unwrap();
+        five_win = (target_close - in_price) / in_price;
+        update_five = true;
+    }
+
+    if close_val.len() > 6 {
+        // 计算五日盈利（买入当天算第一天，第五天盈利如何）
+        let target_close = close_val.get(5).unwrap();
+        seven_win = (target_close - in_price) / in_price;
+        update_seven = true;
+    }
+
+    if !update_five && !update_seven {
+        return;
+    }
+
+    sql = sql + five_win.to_string().as_str() + "'";
+    if update_seven {
+        sql = sql + ", seven_win='" + seven_win.to_string().as_str() + "'"
+    }
+    sql = sql + " where pk_short_history='" + pk.to_string().as_str() + "'";
+    println!("update sql is {}", sql);
+    sql::async_common_exe(sql.as_str()).await;
 }

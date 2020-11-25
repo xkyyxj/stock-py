@@ -1,5 +1,5 @@
 use crate::cache::AsyncRedisOperation;
-use crate::results::{HistoryDown, DBResult, TimeIndexBatchInfo, StockBaseInfo, WaitSelect};
+use crate::results::{HistoryDown, DBResult, StockBaseInfo, WaitSelect};
 use std::collections::HashMap;
 use crate::sql;
 use async_std::task::sleep;

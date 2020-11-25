@@ -58,7 +58,7 @@ impl DBResult for BoxStyle {
 
 fn process_single_row_for_box_style(row: &MySqlRow) -> BoxStyle {
     let mut temp_rst = BoxStyle::new();
-    let mut temp_str: String = row.get("ts_code");
+    let temp_str: String = row.get("ts_code");
     temp_rst.ts_code = temp_str;
     temp_rst.in_date = row.get("his_down_price");
     temp_rst.in_price = row.get("in_price");

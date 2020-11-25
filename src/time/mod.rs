@@ -5,7 +5,7 @@ use chrono::Duration;
 use crate::results::{TimeIndexInfo, TimeIndexBaseInfo, TimeIndexBatchInfo, DBResult};
 use std::str::FromStr;
 use crate::cache::AsyncRedisOperation;
-use redis::aio::Connection;
+
 
 pub(crate) static INDEX_SUFFIX: &str = "_index";
 
@@ -34,19 +34,19 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
     let month = local.date().month();
     let day = local.date().day();
     // 当前天上午开盘时间(上午9:29:59)
-    let mut _up_begin_time = Local.ymd(year, month, day).and_hms_milli(9, 29, 59, 0);
+    let mut up_begin_time = Local.ymd(year, month, day).and_hms_milli(9, 29, 59, 0);
     // 当前天上午闭盘时间(上午11:59:59)
-    let mut _up_end_time = Local.ymd(year, month, day).and_hms_milli(11, 29, 59, 0);
+    let mut up_end_time = Local.ymd(year, month, day).and_hms_milli(11, 29, 59, 0);
     // 当前天下午开盘时间(上午12:59:59)
-    let mut _down_begin_time = Local.ymd(year, month, day).and_hms_milli(12, 59, 59, 0);
+    let mut down_begin_time = Local.ymd(year, month, day).and_hms_milli(12, 59, 59, 0);
     // 当前天下午闭盘时间(上午14:59:59)
-    let mut _down_end_time = Local.ymd(year, month, day).and_hms_milli(14, 59, 59, 0);
+    let mut down_end_time = Local.ymd(year, month, day).and_hms_milli(14, 59, 59, 0);
 
     loop {
         // 当前时间在开盘时间之内
         let curr_time = Local::now();
-        if (curr_time >= _up_begin_time && curr_time <= _up_end_time) ||
-            (curr_time >= _down_begin_time && curr_time <= _down_end_time) {
+        if (curr_time >= up_begin_time && curr_time <= up_end_time) ||
+            (curr_time >= down_begin_time && curr_time <= down_end_time) {
             let ret_rst = surf::get(target_string.as_str()).await;
             if let Err(_) = ret_rst {
                 continue;
@@ -70,36 +70,36 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
         }
 
         // 早上未开盘之前，休眠
-        if curr_time < _up_begin_time {
-            let temp_duration = (_up_begin_time - curr_time).to_std().unwrap();
+        if curr_time < up_begin_time {
+            let temp_duration = (up_begin_time - curr_time).to_std().unwrap();
             del_cache(&stock_code, &mut redis_ope).await;
             sleep(temp_duration).await;
         }
 
         // 上午到下午之间的间歇，休眠
-        if curr_time > _up_end_time && curr_time <= _down_begin_time {
-            let temp_duration = (_down_begin_time - curr_time).to_std().unwrap();
+        if curr_time > up_end_time && curr_time <= down_begin_time {
+            let temp_duration = (down_begin_time - curr_time).to_std().unwrap();
             // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
             // del_cache(&stock_code, &mut redis_ope).await;
             sleep(temp_duration).await;
         }
 
         // 到了第二天，呵呵哒哒
-        if curr_time > _down_end_time {
+        if curr_time > down_end_time {
             // 午夜三点左右，删除前一天的redis缓存吧
             let del_redis_duration = Duration::hours(12);
-            let next_three_morning = _down_end_time + del_redis_duration;
+            let next_three_morning = down_end_time + del_redis_duration;
             let mut temp_duration = (next_three_morning - curr_time).to_std().unwrap();
             sleep(temp_duration).await;
             del_cache(&stock_code, &mut redis_ope).await;
 
             let after_del_time = Local::now();
             let next_day_duration = Duration::hours(24);
-            _up_begin_time = _up_begin_time.add(next_day_duration);
-            temp_duration = (_up_begin_time - after_del_time).to_std().unwrap();
-            _up_end_time = _up_end_time.add(next_day_duration);
-            _down_begin_time = _down_begin_time.add(next_day_duration);
-            _down_end_time = _down_end_time.add(next_day_duration);
+            up_begin_time = up_begin_time.add(next_day_duration);
+            temp_duration = (up_begin_time - after_del_time).to_std().unwrap();
+            up_end_time = up_end_time.add(next_day_duration);
+            down_begin_time = down_begin_time.add(next_day_duration);
+            down_end_time = down_end_time.add(next_day_duration);
             sleep(temp_duration).await;
         }
     }
@@ -126,7 +126,7 @@ async fn process_single_info(content: String, redis_ope: &mut AsyncRedisOperatio
     if v.len() < 2 {
         return;
     }
-    let mut head_part = String::from(v[0]);
+    let head_part = String::from(v[0]);
     // 处理一下股票编码
     if head_part.len() > 8 {
         let _ts_code = head_part.get(head_part.len() - 8..head_part.len()).unwrap();
@@ -204,7 +204,7 @@ async fn process_single_info(content: String, redis_ope: &mut AsyncRedisOperatio
     else {
         let mut index_batch_info = TimeIndexBatchInfo::new();
         index_batch_info.add_single_info(&single_info);
-        let mut write_str = index_batch_info.to_string();
+        let write_str = index_batch_info.to_string();
         redis_key = String::from(&single_info.ts_code);
         redis_key = redis_key.add(INDEX_SUFFIX);
         redis_ope.set::<String, String>(redis_key, write_str).await;
