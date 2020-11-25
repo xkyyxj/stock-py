@@ -1,5 +1,5 @@
 use crate::{sql, utils};
-use sqlx::{MySql};
+use sqlx::{MySql, Row};
 use futures::channel::mpsc::{ Sender };
 use futures::{SinkExt};
 use sqlx::pool::PoolConnection;
@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use async_std::task;
 use chrono::Local;
 use crate::results::{AirCastle, DBResult};
+use crate::utils::time_utils;
 
 /// 空中楼阁理论：疯涨的可能会继续疯涨，博傻博傻!!!!!!
 pub async fn calculate_air_castle() -> bool {
@@ -26,36 +27,60 @@ async fn calculate_air_castle_s(mut conn: PoolConnection<MySql>,
     let config = crate::initialize::CONFIG_INFO.get().unwrap();
     let date_time = Local::now();
     let _curr_date_str = date_time.format("%Y%m%d").to_string();
+    let air_castle_begin_date = time_utils::curr_date_before_days_str(config.air_castle_up_days, "%Y%m%d");
     // 半年以前的时间，从当前天开始获取股票信息
     let half_year_before = utils::time_utils::curr_date_before_days_str(180, "%Y%m%d");
     let query_sql = String::from(" and trade_date > '") + half_year_before.as_str() +
         "' order by trade_date";
     for item in stock_codes {
-        let mut all_vos = sql::query_stock_base_info_a_with_conn(
-            &mut conn,
-            item.as_str(), query_sql.as_str()).await;
-
-        if all_vos.len() < config.air_castle_up_days as usize {
+        // 开始分析进程
+        // 查询ema_value里面的数据，然后看下是不是一直上涨
+        // ema相比较于价格来说，会忽略掉轻微的价格下降，用EMA5吧
+        let mut query_ema = String::from("select ema5 from ema_value where ts_code='");
+        query_ema = query_ema + item.as_str() + "' and trade_date > '" + air_castle_begin_date.as_str();
+        query_ema = query_ema + "' order by trade_date desc";
+        let mut all_ema_value = Vec::<f64>::new();
+        sql::async_common_query(query_ema.as_str(), |rows| {
+            for row in rows {
+                all_ema_value.push(row.get::<'_, f64, &str>("ema5"));
+            }
+        }).await;
+        if all_ema_value.is_empty() {
             continue;
         }
-        all_vos.reverse();
-
-        // 开始分析进程
-        let mut first_close = all_vos[0].close;
-        let last_close = all_vos[0].close;
         let mut up_days = 0;
-        for i in 0..all_vos.len() {
-            if all_vos[i].pct_chg < 0 as f64 {
+        let mut pre_ema = all_ema_value[0];
+        for item in all_ema_value {
+            if item >= pre_ema {
                 up_days = up_days + 1;
-                break;
             }
             else {
-                first_close = all_vos[i].close;
+                // 相当于放弃了这只股票（没有资格进入空中楼阁当中）
+                up_days = 0;
+                break;
             }
         }
         if up_days < config.air_castle_up_days {
             continue;
         }
+
+        let mut first_close = 0f64;
+        let mut last_close = 0f64;
+        let mut last_close_sql = String::from("select close from stock_base_info where ts_code='");
+        last_close_sql = last_close_sql + item.as_str() + "’ order by trade_date desc limit 1";
+        sql::async_common_query(last_close_sql.as_str(), |rows| {
+            if rows.len() > 0 {
+                last_close = rows[0].get::<'_, f64, &str>("close");
+            }
+        }).await;
+
+        let mut first_close_sql = String::from("select close from stock_base_info where ts_code='");
+        first_close_sql = first_close_sql + item.as_str() + "' and trade_date='" + air_castle_begin_date.as_str() + "'";
+        sql::async_common_query(first_close_sql.as_str(), |rows| {
+            if rows.len() > 0 {
+                first_close = rows[0].get::<'_, f64, &str>("close");
+            }
+        }).await;
 
         let up_pct = (last_close - first_close) / first_close;
         if up_pct >= config.air_castle_up_pct {
@@ -75,4 +100,8 @@ async fn calculate_air_castle_s(mut conn: PoolConnection<MySql>,
         Ok(_) => { println!("cal group finished!") },
         Err(_) => { println!("cal success but send message failed!")}
     };
+}
+
+fn query_f64_val(sql: String) {
+
 }
