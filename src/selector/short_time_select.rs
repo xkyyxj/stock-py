@@ -175,13 +175,13 @@ impl ShortTimeSelectResult {
     pub async fn delete() {
         let pool = crate::initialize::MYSQL_POOL.get().unwrap();
         let sql = "delete from short_select_in_time;";
-        sqlx::query(sql).execute(pool);
+        sqlx::query(sql).execute(pool).await;
     }
 
     /// 从数据库当中查询所有的结果
     pub async fn query_all() -> Self {
         let pool = crate::initialize::MYSQL_POOL.get().unwrap();
-        let all_rows = sqlx::query("select * from short_select_intime").
+        let all_rows = sqlx::query("select * from short_select_in_time").
             fetch_all(pool).await.unwrap();
 
         let mut ret_rst = ShortTimeSelectResult::new();
@@ -225,6 +225,7 @@ impl ShortTimeSelect {
             sleep_check: SleepDuringStop::new(),
             all_result: ShortTimeSelectResult::new()
         };
+        ret_val.initialize().await;
         ret_val
     }
 
@@ -241,13 +242,15 @@ impl ShortTimeSelect {
             let (tx, rx) = mpsc::channel::<ShortTimeSelectResult>();
             let curr_time = Local::now();
             sync_short_history(curr_time).await;
-            self.sleep_check.check_sleep(&curr_time).await;
+            // FIXME --　别忘了取消注释
+            //self.sleep_check.check_sleep(&curr_time).await;
             let future = self.ema_select.select(tx);
             futures::join!(future);
 
             let mut temp_result = ShortTimeSelectResult::new();
             for received  in rx {
                 // 获取结果
+                println!("recerved length is {}", received.select_rst.len());
                 temp_result.merge(&received);
             }
             let new_buy_stock = self.all_result.append(&temp_result);

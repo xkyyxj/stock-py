@@ -55,7 +55,8 @@ impl EMASelect {
             // 第一点一步：查询ema_value，确定是否连续N天上涨
             let mut query_str = String::from("select trade_date, ");
             query_str = query_str + ema_field.as_str() + " from ema_value ";
-            query_str = query_str + " where ts_code='" + ts_code.as_str() + "'";
+            // FIXME--此处写死了是主板和中小板，等哪天开通了创业板和科创板，记得改正啊
+            query_str = query_str + " where ts_code='" + ts_code.as_str() + "' and market in ('主板','中小板')";
             query_str = query_str + " order by trade_date desc limit ";
             query_str = query_str + ema_up_days.to_string().as_str();
             let mut is_always_up = true;
@@ -76,7 +77,10 @@ impl EMASelect {
                 }
             }).await;
 
-            // 第一点二步：如果是持续上涨的话，那么就加入到备胎当中去
+            // 第一点二步：如果是持续上涨的话，那么就加入到备胎当中去，否则连备胎都当不起
+            if !is_always_up {
+                continue;
+            }
             self.backup_codes.push(String::from(&ts_code));
             self.code2name_map.insert(String::from(&ts_code), ts_name);
             let ema_ana_info = EMAAnaInfo{ last_ema_value: pre_ema_val };

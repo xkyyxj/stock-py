@@ -171,7 +171,7 @@ impl LongTimeSelectResult {
     pub(crate) async fn delete() {
         let pool = crate::initialize::MYSQL_POOL.get().unwrap();
         let sql = "delete from short_select_in_time;";
-        sqlx::query(sql).execute(pool);
+        sqlx::query(sql).execute(pool).await;
     }
 }
 

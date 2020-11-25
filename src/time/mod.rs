@@ -72,7 +72,7 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
         // 早上未开盘之前，休眠
         if curr_time < _up_begin_time {
             let temp_duration = (_up_begin_time - curr_time).to_std().unwrap();
-            del_cache(&stock_code, &mut redis_ope);
+            del_cache(&stock_code, &mut redis_ope).await;
             sleep(temp_duration).await;
         }
 

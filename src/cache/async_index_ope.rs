@@ -44,7 +44,13 @@ pub async fn get_num_last_index_info_redis(redis_ope: &mut AsyncRedisOperation, 
                 let curr_index = temp_infos.len() - 2 - i as usize;
                 // 上面从redis当中多获取了一个，所以这个地方的话如果是小于1的话，就不要了
                 if curr_index < 1 {
-                    return Some(base_info_vec)
+                    return Some(base_info_vec);
+                }
+
+                // 特殊处理一下一种情况：当上面的变量start为0的时候，curr_index为1的话
+                // 此时*temp_infos.get(curr_index).unwrap()实际上是股票编码，所以会导致报错
+                if start == 0 && curr_index < 2 {
+                    return Some(base_info_vec);
                 }
                 let last_info_str = String::from(*temp_infos.get(curr_index).unwrap());
                 base_info_vec.push(last_info_str.into());
