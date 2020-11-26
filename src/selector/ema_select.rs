@@ -55,8 +55,7 @@ impl EMASelect {
             // 第一点一步：查询ema_value，确定是否连续N天上涨
             let mut query_str = String::from("select trade_date, ");
             query_str = query_str + ema_field.as_str() + " from ema_value ";
-            // FIXME--此处写死了是主板和中小板，等哪天开通了创业板和科创板，记得改正啊
-            query_str = query_str + " where ts_code='" + ts_code.as_str() + "' and market in ('主板','中小板')";
+            query_str = query_str + " where ts_code='" + ts_code.as_str() + "'";
             query_str = query_str + " order by trade_date desc limit ";
             query_str = query_str + ema_up_days.to_string().as_str();
             let mut is_always_up = true;
@@ -97,7 +96,7 @@ impl EMASelect {
             let redis_info = get_num_last_index_info_redis(
                 &mut self.redis_ope, &temp_ts_code, 5).await;
             if let None = redis_info {
-                return;
+                continue;
             }
 
             let real_redis_info = redis_info.unwrap();
@@ -120,8 +119,9 @@ impl EMASelect {
                 line_style: line_type
             };
             self.judge_can_add(single_rst, line_type);
-            tx.send(self.selected_rst.clone());
         }
+        // FIXME -- 内存间歇性抽风，要不要这个地方就不自己存了，反正自己也不用
+        tx.send(self.selected_rst.clone());
     }
 
     fn judge_can_add(&mut self, mut single_rst: SingleShortTimeSelectResult, up_state: i32) {

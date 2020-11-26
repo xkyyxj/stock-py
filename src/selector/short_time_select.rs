@@ -1,16 +1,10 @@
-
 use crate::selector::ema_select::{EMASelect};
-
-
 use crate::utils::time_utils::SleepDuringStop;
 use chrono::{DateTime, Local, Duration};
 use std::sync::mpsc;
 use async_std::task::sleep;
 use crate::results::DBResult;
-
-
 use sqlx::{MySql, Row};
-
 use sqlx::pool::PoolConnection;
 use crate::simulate::sync_short_history;
 
@@ -82,14 +76,26 @@ impl ShortTimeSelectResult {
     }
 
     pub fn add_selected(&mut self, info : SingleShortTimeSelectResult) {
-        self.select_rst.push(info);
+        let mut contains = false;
+        for item in &mut self.select_rst {
+            if item.ts_code == info.ts_code {
+                // 如果已经存在了，那么就直接update一下就好
+                item.line_style = info.line_style;
+                item.level = info.level;
+                item.curr_price = info.curr_price;
+                contains = true;
+            }
+        }
+        if !contains {
+            self.select_rst.push(info);
+        }
     }
 
     /// 合并结果用于多个不同的选择策略的合并，蒋选择结果合并到最终结果当中需要用到append方法
     /// 两个结果的合并，重复的结果得分的简单相加，只在一方存在的结果添加到最终结果集里面
-    pub fn merge(&mut self, other: &ShortTimeSelectResult) {
+    pub fn merge(&mut self, other: ShortTimeSelectResult) {
         let mut only_one = Vec::<SingleShortTimeSelectResult>::new();
-        for other_item in &other.select_rst {
+        for other_item in other.select_rst {
             let mut contain = false;
             for self_item in &mut self.select_rst {
                 if self_item.ts_code == other_item.ts_code {
@@ -102,7 +108,7 @@ impl ShortTimeSelectResult {
                 }
             }
             if !contain {
-                only_one.push(other_item.clone());
+                only_one.push(other_item);
             }
         }
         if !only_one.is_empty() {
@@ -113,12 +119,12 @@ impl ShortTimeSelectResult {
 
     /// 蒋某次选择结果汇总到最终结果中来
     /// @return 返回所有在这一个append当中可买入的股票
-    pub fn append(&mut self, other: &ShortTimeSelectResult) -> Vec<String> {
+    pub fn append(&mut self, other: ShortTimeSelectResult) -> Vec<String> {
         let mut ret_rst = Vec::<String>::new();
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let short_time_buy_level = config.short_buy_level;
         let mut only_one = Vec::<SingleShortTimeSelectResult>::new();
-        for other_item in &other.select_rst {
+        for other_item in other.select_rst {
             let mut contain = false;
             for self_item in &mut self.select_rst {
                 if self_item.ts_code == other_item.ts_code {
@@ -143,11 +149,10 @@ impl ShortTimeSelectResult {
                 }
             }
             if !contain {
-                let temp_val = other_item.clone();
-                if temp_val.level >= short_time_buy_level {
-                    ret_rst.push(String::from(&temp_val.ts_code));
+                if other_item.level >= short_time_buy_level {
+                    ret_rst.push(String::from(&other_item.ts_code));
                 }
-                only_one.push(temp_val);
+                only_one.push(other_item);
             }
         }
         if !only_one.is_empty() {
@@ -249,9 +254,9 @@ impl ShortTimeSelect {
             let mut temp_result = ShortTimeSelectResult::new();
             for received  in rx {
                 // 获取结果
-                temp_result.merge(&received);
+                temp_result.merge(received);
             }
-            let new_buy_stock = self.all_result.append(&temp_result);
+            let new_buy_stock = self.all_result.append(temp_result);
             let mut wait_select_stock = String::from("");
             for item in new_buy_stock {
                 wait_select_stock = wait_select_stock + item.as_str();
