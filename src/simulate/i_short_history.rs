@@ -16,8 +16,8 @@ pub struct SingleShortTimeHistory {
     pub(crate) source: String,          // 来源系统，通过ema选定还是什么其他指标
     pub(crate) level_pct: f64,          // 得分的百分比
     pub(crate) line_style: i32,         // 分时线形态：-1 一直下降；0 经历过拐点(先下降后上升)；1 先上升后下降；2 一直上涨；3 一直一个价;4 反复波动
-    pub(crate) five_win: f64,           // 五日盈利百分比
-    pub(crate) seven_win: f64,          // 七日盈利百分比
+    pub(crate) win_5: f64,              // 五日盈利百分比
+    pub(crate) win_7: f64,              // 七日盈利百分比
 }
 
 impl From<&SingleShortTimeSelectResult> for SingleShortTimeHistory {
@@ -30,8 +30,8 @@ impl From<&SingleShortTimeSelectResult> for SingleShortTimeHistory {
             source: String::from(&source.source),
             level_pct: source.level_pct,
             line_style: source.line_style,
-            five_win: 0.0,
-            seven_win: 0.0
+            win_5: 0.0,
+            win_7: 0.0
         }
     }
 }
@@ -119,43 +119,5 @@ pub async fn sync_short_history(curr_time: &DateTime<Local>) {
 }
 
 async fn cal_single_row(pk: i64, ts_code: String, in_time: String, in_price: f64) {
-    let mut sql = String::from("select close from stock_base_info where ts_code='");
-    sql = sql + ts_code.as_str() + "' and trade_date > '" + in_time.as_str() + "'";
-    sql = sql + " order by trade_date limit 20";
-    let mut close_val = Vec::<f64>::new();
-    sql::async_common_query(sql.as_str(), |rows| {
-        for row in rows {
-            close_val.push(row.get::<'_, f64, &str>("close"))
-        }
-    }).await;
 
-    let mut five_win = 0f64;
-    let mut seven_win = 0f64;
-    let mut update_five = false;
-    let mut update_seven = false;
-    if close_val.len() > 4 {
-        // 计算五日盈利（买入当天算第一天，第五天盈利如何）
-        let target_close = close_val.get(3).unwrap();
-        five_win = (target_close - in_price) / in_price;
-        update_five = true;
-    }
-
-    if close_val.len() > 6 {
-        // 计算五日盈利（买入当天算第一天，第五天盈利如何）
-        let target_close = close_val.get(5).unwrap();
-        seven_win = (target_close - in_price) / in_price;
-        update_seven = true;
-    }
-
-    if !update_five && !update_seven {
-        return;
-    }
-
-    sql = sql + five_win.to_string().as_str() + "'";
-    if update_seven {
-        sql = sql + ", seven_win='" + seven_win.to_string().as_str() + "'"
-    }
-    sql = sql + " where pk_short_history='" + pk.to_string().as_str() + "'";
-    println!("update sql is {}", sql);
-    sql::async_common_exe(sql.as_str()).await;
 }

@@ -46,15 +46,15 @@ fn main() {
     //     let (mut tx, rx) = mpsc::channel::<u32>(4000);
     //     calculate_air_castle_s(conn, ts_codes, tx, map).await;
     // });
-    // task::block_on(calculate_air_castle());
+    task::block_on(calculate_air_castle());
     // task::block_on(async {
     //     let local_time = Local::now();
     //     sync_short_history(&local_time).await;
     // });
 
     // 短期哦选股的验证逻辑
-    let mut short_time_select = ShortTimeStrategy::new();
-    short_time_select.__call__();
+    // let mut short_time_select = ShortTimeStrategy::new();
+    // short_time_select.__call__();
 
     match DateTime::<Local>::from_str("2020-11-02T15:00:03 +08:00") {
         Ok(_val) => println!("ok， val is {}", _val),
@@ -71,7 +71,7 @@ fn main() {
     //     join_handler.await;
     //     // /join_handler2.await;
     // });
-    sleep(Duration::from_secs(100000));
+    // sleep(Duration::from_secs(100000));
 
 }
 
