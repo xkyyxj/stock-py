@@ -20,9 +20,12 @@ use std::thread::sleep;
 use std::str::FromStr;
 use async_std::task;
 use calculate::calculate_air_castle;
-use crate::calculate::calculate_air_castle_s;
+use crate::calculate::{calculate_history_down, calculate_air_castle_s, parse_table_info, win_calculate};
 use futures::channel::mpsc;
 use crate::simulate::sync_short_history;
+use crate::file::read_txt_file;
+use async_std::fs::File;
+use futures::AsyncWriteExt;
 
 fn main() {
     let mut map = HashMap::<String, String>::new();
@@ -46,7 +49,7 @@ fn main() {
     //     let (mut tx, rx) = mpsc::channel::<u32>(4000);
     //     calculate_air_castle_s(conn, ts_codes, tx, map).await;
     // });
-    task::block_on(calculate_air_castle());
+    // task::block_on(calculate_air_castle());
     // task::block_on(async {
     //     let local_time = Local::now();
     //     sync_short_history(&local_time).await;
@@ -55,6 +58,14 @@ fn main() {
     // 短期哦选股的验证逻辑
     // let mut short_time_select = ShortTimeStrategy::new();
     // short_time_select.__call__();
+
+    // 文件读取以及解析验证
+    task::block_on(async {
+        win_calculate().await;
+    });
+
+    // 低值计算验证
+    // task::block_on(calculate_history_down());
 
     match DateTime::<Local>::from_str("2020-11-02T15:00:03 +08:00") {
         Ok(_val) => println!("ok， val is {}", _val),
@@ -71,7 +82,7 @@ fn main() {
     //     join_handler.await;
     //     // /join_handler2.await;
     // });
-    // sleep(Duration::from_secs(100000));
+    sleep(Duration::from_secs(100000));
 
 }
 

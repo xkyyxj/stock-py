@@ -2,6 +2,7 @@ mod ema_select;
 mod short_time_select;
 mod sold_policy;
 mod long_time_select;
+mod final_select;
 
 pub use short_time_select::{ShortTimeSelect, ShortTimeSelectResult, SingleShortTimeSelectResult};
 

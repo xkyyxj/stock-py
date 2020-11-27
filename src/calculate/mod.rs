@@ -9,6 +9,7 @@ mod win_pct_calculate;
 pub use calculate_max_win::calculate_max_win;
 pub use calculate_history_down::calculate_history_down;
 pub use calculate_air_castle::{calculate_air_castle, calculate_air_castle_s};
+pub use win_pct_calculate::win_calculate;
 use crate::sql;
 use std::collections::HashMap;
 use futures::channel::mpsc;
@@ -17,6 +18,9 @@ use futures::{StreamExt, SinkExt};
 use sqlx::pool::PoolConnection;
 use futures::channel::mpsc::Sender;
 use combine::lib::collections::hash_map::RandomState;
+
+// temp ----------------------------------
+pub use win_pct_calculate::parse_table_info;
 
 pub async fn calculate_wrapper(target_function: fn(PoolConnection<MySql>, Vec<String>, Sender<u32>, HashMap<String, String>)) -> bool {
     let columns = vec!["ts_code", "name"];
@@ -66,39 +70,4 @@ pub async fn calculate_wrapper(target_function: fn(PoolConnection<MySql>, Vec<St
     let ret_val = rx.collect::<Vec<u32>>().await;
     println!("cal finished!!");
     ret_val.len() == grp_count
-}
-
-pub async fn calculate_n_days_win(ts_code: String, in_price: f64, in_time: String, days: Vec::<i64>)
-    -> HashMap<i64, f64, RandomState> {
-    // 第零步：获取这里面最大的天数(并且多查两天)
-    let mut max_days = 0i64;
-    for item in days {
-        if item > max_days {
-            max_days = item;
-        }
-    }
-    max_days = max_days + 2;
-    // 第一步：从数据库当中查询出这N天来的价格
-    let mut close_val = Vec::<f64>::with_capacity(max_days as usize);
-    let mut sql = String::from("select close from stock_base_info where ts_code='");
-    sql = sql + ts_code.as_str() + "' and trade_date>'" + in_time.as_str() + "'";
-    sql = sql + " order by trade_date limit " + max_days.to_string().as_str();;
-    sql::async_common_query(sql.as_str(), |rows| {
-        for row in rows {
-            close_val.push(row.get::<'_, f64, &str>("close"));
-        }
-    }).await;
-
-    // 第二步：开始计算，并且返回结果
-    let mut map = HashMap::<i64, f64>::new();
-    for item in days {
-        if close_val.len() < item as usize || item < 1 {
-            continue;
-        }
-
-        let target_close = close_val.get(item - 1).unwrap();
-        let up_pct = (target_close - in_price) / in_price;
-        map.insert(item, up_pct);
-    }
-    map
 }
