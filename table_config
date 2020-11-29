@@ -1,0 +1,7 @@
+history_down:pk_history_down:in_date:in_price:5,7,30,60
+short_time_history:pk_short_history:in_time:in_price:5,7
+box_style:pk_boxstyle:in_date:in_price:5,7
+air_castle:pk_air_castle:in_date:in_price:5,7
+down_then_flow:pk_down_flow:in_date:in_price:3,5,7,30
+wait_select:pk_wait_select:in_date:in_price:3,5,7,30,60
+daily_concern:pk_concern:in_datetime:in_price:5,7,30,60

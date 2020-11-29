@@ -5,13 +5,13 @@ use crate::results::TimeIndexBaseInfo;
 /// 异步方法：从redis缓存当中获取最后一条股票实时信息
 pub async fn get_last_index_info_from_redis(redis_ope: &mut AsyncRedisOperation, ts_code: &String) -> Option<TimeIndexBaseInfo> {
     if let Some(mut val) = get_num_last_index_info_redis(redis_ope, ts_code, 1).await {
-        return val.pop()
+        return Some(val.remove(0));
     }
     None
 }
 
 /// 异步方法：从redis缓存当中获取最后几条实时信息，如果达不到传入参数要求的数据量，返回尽量多的
-/// Important!!!! -- 返回的Vec当中越靠前的越新
+/// Important!!!! -- 返回的Vec当中index越小越新
 pub async fn get_num_last_index_info_redis(redis_ope: &mut AsyncRedisOperation, ts_code: &String, num: i64)
     -> Option<Vec<TimeIndexBaseInfo>> {
     let mut redis_key = String::from(ts_code) + INDEX_SUFFIX;

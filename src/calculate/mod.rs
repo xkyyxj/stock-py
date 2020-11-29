@@ -1,10 +1,11 @@
-mod calculate_big_wave;
+mod calculate_box_style;
 mod calculate_max_win;
 mod calculate_history_down;
 mod calculate_air_castle;
 mod calculate_down_then_flow;
 mod calculate_quick_down;
 mod win_pct_calculate;
+mod calculate_steady;
 
 pub use calculate_max_win::calculate_max_win;
 pub use calculate_history_down::calculate_history_down;
