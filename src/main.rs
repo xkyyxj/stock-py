@@ -22,10 +22,23 @@ use async_std::task;
 use calculate::calculate_air_castle;
 use crate::calculate::{calculate_history_down, calculate_air_castle_s, parse_table_info, win_calculate};
 use futures::channel::mpsc;
-use crate::simulate::sync_short_history;
 use crate::file::read_txt_file;
 use async_std::fs::File;
 use futures::AsyncWriteExt;
+
+struct A {
+    data: i32,
+}
+
+struct B {
+    a: *mut A,
+}
+
+impl B {
+    fn set_data(&self, data: i32) {
+        unsafe { (*self.a).data = data };
+    }
+}
 
 fn main() {
     let mut map = HashMap::<String, String>::new();
@@ -59,10 +72,30 @@ fn main() {
     // let mut short_time_select = ShortTimeStrategy::new();
     // short_time_select.__call__();
 
+    let future1 = async {
+        println!("first");
+        sleep(Duration::from_secs(10));
+        println!("first_end;");
+    };
+
+    let future2 = async {
+        println!("second");
+        sleep(Duration::from_secs(10));
+        println!("second_end;");
+    };
+
+    let future3 = async {
+        futures::join!(future1, future2);
+    };
+
+    task::block_on(future3);
+
+
+
     // 文件读取以及解析验证
-    task::block_on(async {
-        win_calculate().await;
-    });
+    // task::block_on(async {
+    //     win_calculate().await;
+    // });
 
     // 低值计算验证
     // task::block_on(calculate_history_down());

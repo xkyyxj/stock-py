@@ -2,8 +2,11 @@ use std::collections::HashMap;
 
 use crate::sql;
 use sqlx::Row;
-use crate::cache::get_num_last_index_info_redis;
+use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
 use crate::results::TimeIndexBaseInfo;
+use crate::selector::{CommonSelectRst, SingleCommonRst, SHORT_TYPE, FINAL_TYPE, LONG_TYPE};
+use futures::channel::mpsc::UnboundedSender;
+use futures::SinkExt;
 
 pub struct HistoryDownAnaInfo {
     ts_code: String,
@@ -14,17 +17,24 @@ pub struct HistoryDownAnaInfo {
 pub struct HistoryDownSelect {
     selected: Vec::<String>,
     backup: Vec::<HistoryDownAnaInfo>,
+    redis_ope: AsyncRedisOperation,
+    initialized: bool,
 }
 
 impl HistoryDownSelect {
-    pub fn new() -> Self {
-        HistoryDownSelect { selected: vec![], backup: vec![] }
+    pub async fn new() -> Self {
+        HistoryDownSelect {
+            selected: vec![],
+            backup: vec![],
+            redis_ope: AsyncRedisOperation::new().await,
+            initialized: false
+        }
     }
 
-    pub fn initialize(&mut self) {
+    pub async fn initialize(&mut self) {
         // 第零步：查询最新的history_down表中的记录
         let mut sql = String::from("select in_date from history_down order by in_date desc limit 1");
-        let last_date_str;
+        let mut last_date_str: String = String::new();
         sql::async_common_query(sql.as_str(), |rows| {
             for row in rows {
                 last_date_str = row.get("in_date");
@@ -43,22 +53,30 @@ impl HistoryDownSelect {
                 self.backup.push(temp_info);
             }
         }).await;
+        self.initialized = true;
     }
 
     pub fn get_name() -> String {
-        return String::from("history_down_ana");
+        return String::from("history_down_select");
     }
 
     /// 判定逻辑有如下几点（实时分析程序就好了）：
     /// 1. 最新价格比历史最低价上涨幅度在config信息里面标注的幅度之间
     /// 2. 当前价格正在上涨过程当中
     /// 3. 比昨天的收盘价要高
-    pub(crate) async fn select(&mut self) {
+    pub(crate) async fn select(&mut self, mut tx: UnboundedSender<CommonSelectRst>) -> () {
+        if !self.initialized {
+            return;
+        }
+
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let min_up_pct = config.history_down_config.min_history_down_buy_pct;
         let max_up_pct = config.history_down_config.max_history_down_buy_pct;
+
+        let mut selected_rst = CommonSelectRst::new();
         for item in &self.backup {
             // 第一步：获取最新的redis缓存信息
+            let temp_ts_code = String::from(&item.ts_code);
             let redis_info = get_num_last_index_info_redis(
                 &mut self.redis_ope, &temp_ts_code, 5).await;
             if let None = redis_info {
@@ -84,12 +102,28 @@ impl HistoryDownSelect {
             // 3. 比昨天的收盘价要高
             let pre_day_close = last_info.y_close;
             selected = selected && last_price > pre_day_close;
+            if !selected {
+                continue;
+            }
 
-            // 第三步：如果成功了，更新history_down的selected字段
+            // 第三步：如果成功了，更新history_down的selected字段，并且添加到选中结果集当中去
             let mut sql = String::from("update history_down set selected='Y' where pk_history_down='");
             sql = sql + item.pk_history_down.as_str() + "'";
             sql::async_common_exe(sql.as_str()).await;
+            // TODO -- level以及ts_name字段都没有赋值
+            let single_rst = SingleCommonRst {
+                ts_code: String::from(&item.ts_code),
+                ts_name: "".to_string(),
+                curr_price: last_price,
+                level: 0,
+                source: "history_down".to_string(),
+                level_pct: 0.0,
+                line_style: 0,
+                rst_style: SHORT_TYPE & LONG_TYPE & FINAL_TYPE
+            };
+            selected_rst.add_selected(single_rst);
         }
+        tx.send(selected_rst);
     }
 }
 

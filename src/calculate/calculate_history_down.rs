@@ -27,8 +27,9 @@ pub async fn calculate_history_down() -> bool {
 async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
                             stock_codes: Vec<String>, mut tx: Sender<u32>,
                             _code2name_map: HashMap<String, String>) {
-    let last_days = crate::initialize::CONFIG_INFO.get().unwrap().min_history_down_days;
-    let min_up_pct = crate::initialize::CONFIG_INFO.get().unwrap().min_history_down_up_pct;
+    let config = crate::initialize::CONFIG_INFO.get().unwrap();
+    let last_days = config.history_down_config.min_history_down_days;
+    let min_up_pct = config.history_down_config.min_history_down_up_pct;
     for item in stock_codes {
         // 第一步：查询最近3年多的交易日线信息
         let mut all_close = Vec::<f64>::new();

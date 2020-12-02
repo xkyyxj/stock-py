@@ -1,11 +1,8 @@
 mod ema_select;
-mod short_time_select;
-mod sold_policy;
-mod long_time_select;
+mod rst_process;
 mod final_select;
 mod history_down_select;
 
-pub use short_time_select::{ShortTimeSelect, ShortTimeSelectResult, SingleShortTimeSelectResult};
 use chrono::{DateTime, Local};
 
 static ALWAYS_DOWN: i32 = -1;       // 一直下降
@@ -17,7 +14,7 @@ static WAVE: i32 = 4;               // 反复波动
 
 pub(crate) static SHORT_TYPE: i32 = 1;  // 短期选择结果
 pub(crate) static LONG_TYPE: i32 = 2;   // 长期选择结果
-pub(crate) static ALL_TYPE: i32 = 4;    // 既符合长期又符合短期的选择结果
+pub(crate) static FINAL_TYPE: i32 = 4;    // 最终待选股票-要插入到wait_select表当中的数据
 
 pub struct SingleCommonRst {
     pub ts_code: String,
@@ -50,11 +47,25 @@ impl Clone for SingleCommonRst {
     }
 }
 
+impl Clone for CommonSelectRst {
+    fn clone(&self) -> Self {
+        let mut vec: Vec<SingleCommonRst> = vec![];
+        for item in &self.select_rst {
+            vec.push(item.clone());
+        }
+        CommonSelectRst {
+            select_rst: vec,
+            ts: self.ts.clone()
+        }
+    }
+}
+
 impl CommonSelectRst {
     pub(crate) fn new() -> Self {
         CommonSelectRst { select_rst: vec![], ts: Local::now() }
     }
 
+    // FIXME -- 此处各个字段的处理是不是还需要精细化一些
     pub(crate) fn add_selected(&mut self, info : SingleCommonRst) {
         let mut contains = false;
         for item in &mut self.select_rst {
@@ -63,7 +74,7 @@ impl CommonSelectRst {
                 item.line_style = info.line_style;
                 item.level = info.level;
                 item.curr_price = info.curr_price;
-                item.rst_style = info.rst_style;
+                item.rst_style = item.rst_style & info.rst_style;
                 // TODO source如何处理，得看下
                 contains = true;
             }
@@ -86,9 +97,7 @@ impl CommonSelectRst {
                         self_item.level = 100;
                     }
                     // 更正一下结果适用范围（短线、长线？）
-                    if self_item.rst_style != other_item.rst_style {
-                        self_item.rst_style = ALL_TYPE;
-                    }
+                    self_item.rst_style = self_item.rst_style & other_item.rst_style;
                     contain = true;
                     break;
                 }
@@ -131,9 +140,7 @@ impl CommonSelectRst {
                     // 对于self_item.level > other_item.level，一概不处理
 
                     // 更正一下结果适用范围（短线、长线？）
-                    if self_item.rst_style != other_item.rst_style {
-                        self_item.rst_style = ALL_TYPE;
-                    }
+                    self_item.rst_style = self_item.rst_style & other_item.rst_style;
                     self_item.line_style = other_item.line_style;
                     contain = true;
                     break;

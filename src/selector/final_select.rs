@@ -1,26 +1,42 @@
-use crate::selector::long_time_select::{LongTimeSelectResult, LongTimeSelect};
-use crate::selector::{ShortTimeSelect, CommonSelectRst};
+use crate::selector::{CommonSelectRst};
 use crate::file::read_txt_file;
 use std::collections::HashMap;
 use crate::selector::ema_select::EMASelect;
 use crate::selector::history_down_select::HistoryDownSelect;
-use std::sync::mpsc;
+use crate::py_wrapper::ShortTimeStrategy;
+use futures::{Future, StreamExt};
+use crate::selector::rst_process::CommonTimeRstProcess;
+use crate::utils::time_utils::SleepDuringStop;
+use chrono::Local;
+use async_std::task::{self, sleep};
+use futures::channel::mpsc;
+use chrono::Duration;
+use std::pin::Pin;
+use futures::channel::mpsc::UnboundedSender;
+use std::sync::{Arc, Mutex};
 
 pub struct AllSelectStrategy {
-    short_time: ShortTimeSelect,
-    long_time: LongTimeSelect,
+    rst_processor: CommonTimeRstProcess,
     short_time_selector: Vec<String>,
     long_time_selector: Vec<String>,
-    selector_rst: HashMap<String, Vec::<CommonSelectRst>>,
 
-    // 各种选择器
-    ema_select: EMASelect,
-    history_down: HistoryDownSelect,
+    time_check: SleepDuringStop,
+
+    // 各种选择策略：
+    ema_select: Arc<Mutex<EMASelect>>,
+    history_down: Arc<Mutex<HistoryDownSelect>>,
 }
 
 impl AllSelectStrategy {
-    pub fn new() -> Self {
-
+    pub async fn new() -> Self {
+        AllSelectStrategy {
+            rst_processor: CommonTimeRstProcess::new(),
+            short_time_selector: vec![],
+            long_time_selector: vec![],
+            time_check: SleepDuringStop::new(),
+            ema_select: Arc::new(Mutex::new(EMASelect::new().await)),
+            history_down: Arc::new(Mutex::new(HistoryDownSelect::new().await)),
+        }
     }
 
     pub async fn initialize(&mut self) {
@@ -31,22 +47,70 @@ impl AllSelectStrategy {
         if let Some(selectors) = infos.remove("long_time") {
             self.long_time_selector = selectors;
         }
+
+        if self.contain_selector(&String::from(EMASelect::get_name())) {
+            let mut real_ema = self.ema_select.lock().unwrap();
+            real_ema.initialize().await;
+        }
+
+        if self.contain_selector(&String::from(HistoryDownSelect::get_name())) {
+            let mut real_history_down = self.history_down.lock().unwrap();
+            real_history_down.initialize().await;
+        }
     }
 
-    pub async fn select(&self) {
+    fn contain_selector(&mut self, name: &String) -> bool {
+        self.short_time_selector.contains(name) || self.long_time_selector.contains(name)
+    }
+
+    pub async fn select(&mut self) {
         // 第零步：获取初始化的配置信息
         let config = crate::initialize::CONFIG_INFO.get().unwrap();
         let ana_delta_time = config.analyze_time_delta;
         let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
         loop {
-            let (tx, rx) = mpsc::channel::<CommonSelectRst>();
+            let curr_time = Local::now();
+            self.time_check.check_sleep(&curr_time).await;
+            let (mut tx, rx) = mpsc::unbounded::<CommonSelectRst>();
+            // 如果添加了新的选择策略，别忘了在这儿添加，现在只能是这样了…………，动态扩展？？？？？？？呵呵哒哒
+            let history_down_clone = self.history_down.clone();
+            let mut tx_clone = tx.clone();
+            task::spawn(async move {
+                let mut real_history_down = history_down_clone.lock().unwrap();
+                real_history_down.select(tx_clone);
+            });
+
+            let ema_select_clone = self.ema_select.clone();
+            tx_clone = tx.clone();
+            task::spawn(async move {
+                let mut real_ema_select = ema_select_clone.lock().unwrap();
+                real_ema_select.select(tx_clone);
+            });
+            drop(tx);
+
+            let mut temp_rst = CommonSelectRst::new();
+            let all_common_rst = rx.collect::<Vec<CommonSelectRst>>().await;
+            for item in all_common_rst {
+                temp_rst.merge(&item);
+            }
+            // TODO -- 如何选择出最终的wait_select结果？？？？？
+            self.rst_processor.process(&temp_rst, &curr_time).await;
+
+            // 每X秒获取一次(由analyze_time_delta指定)
+            let duration = Duration::seconds(ana_delta_time);
+            let fetch_finish_time = Local::now();
+            let fetch_cost_time = fetch_finish_time - curr_time;
+            let real_sleep_time = duration - fetch_cost_time;
+            if real_sleep_time.num_nanoseconds().unwrap() > 0 {
+                sleep(real_sleep_time.to_std().unwrap()).await;
+            }
         }
     }
 }
 
 // 辅助函数--解析配置文件
 async fn parse_file() -> HashMap<String, Vec<String>> {
-    let ret_val = HashMap::<String, Vec<String>>::new();
+    let mut ret_val = HashMap::<String, Vec<String>>::new();
     let content = read_txt_file(String::from("select_config")).await;
     let all_str_rows: Vec<&str> = content.split('\n').collect();
     for row in all_str_rows {
@@ -61,12 +125,12 @@ async fn parse_file() -> HashMap<String, Vec<String>> {
         if infos.len() < 2 {
             continue;
         }
-        let mut long_or_short = String::from(infos.get(0).unwrap());
+        let mut long_or_short = String::from(*infos.get(0).unwrap());
         long_or_short = String::from(long_or_short.trim());
-        let mut selectors = String::from(infos.get(1).unwrap());
+        let mut selectors = String::from(*infos.get(1).unwrap());
         selectors = String::from(selectors.trim());
         if long_or_short == "short_time" || long_or_short == "long_time" {
-            ret_val.put(long_or_short, parse_selectors(selectors));
+            ret_val.insert(long_or_short, parse_selectors(selectors).await);
         }
     }
     ret_val
@@ -74,8 +138,8 @@ async fn parse_file() -> HashMap<String, Vec<String>> {
 
 async fn parse_selectors(selectors: String) -> Vec<String> {
     let mut all_selectors = Vec::<String>::new();
-    let all_selectors_str: Vec<&str> = selectors.split(',').trim();
-    for selector in all_selectors {
+    let all_selectors_str: Vec<&str> = selectors.split(',').collect();
+    for selector in all_selectors_str {
         let mut str = String::from(selector);
         str = String::from(str.trim());
         if str.len() == 0 {

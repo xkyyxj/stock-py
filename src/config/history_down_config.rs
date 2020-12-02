@@ -12,6 +12,7 @@ pub(crate) static MIN_HISTORY_DOWN_BUY_PCT: f64 = 0.03;
 /// 发出买入信号的最高涨幅
 pub(crate) static MAX_HISTORY_DOWN_BUY_PCT: f64 = 0.07;
 
+#[derive(Debug)]
 pub struct HistoryDownConfig {
     pub min_history_down_days: usize,
     pub min_history_down_up_pct: f64,

@@ -5,8 +5,9 @@ use crate::sql;
 use std::collections::HashMap;
 use sqlx::Row;
 use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
-use crate::selector::{ShortTimeSelectResult, SingleShortTimeSelectResult};
-use std::sync::mpsc::Sender;
+use futures::channel::mpsc::{UnboundedSender};
+use crate::selector::{CommonSelectRst, SingleCommonRst};
+use futures::SinkExt;
 
 /// 短期选择策略
 pub struct EMAAnaInfo {
@@ -16,21 +17,25 @@ pub struct EMAAnaInfo {
 
 pub struct EMASelect {
     backup_codes: Vec<String>,
-    selected_rst: ShortTimeSelectResult,
     code2name_map: HashMap<String, String>,
     code2ana_info_map: HashMap<String, EMAAnaInfo>,
     redis_ope: AsyncRedisOperation,
+    initialized: bool,
 }
 
 impl EMASelect {
     pub(crate) async fn new() -> Self {
         EMASelect {
             backup_codes: vec![],
-            selected_rst: ShortTimeSelectResult::new(),
             code2name_map: Default::default(),
             code2ana_info_map: Default::default(),
-            redis_ope: AsyncRedisOperation::new().await
+            redis_ope: AsyncRedisOperation::new().await,
+            initialized: false
         }
+    }
+
+    pub fn get_name() -> String {
+        return String::from("ema_select");
     }
 
     pub(crate) async fn initialize(&mut self) {
@@ -85,11 +90,17 @@ impl EMASelect {
             let ema_ana_info = EMAAnaInfo{ last_ema_value: pre_ema_val };
             self.code2ana_info_map.insert(ts_code, ema_ana_info);
         }
+        self.initialized = true;
     }
 
     /// 策略：获取最近的几条实时信息，如果是正处于下降过程当中的，那么就不加入到备选当中，如果是经历过拐点的，加入到备选当中
     /// 如果是一直处于上涨的过程当中，给个中等评分吧
-    pub(crate) async fn select(&mut self, tx: Sender<ShortTimeSelectResult>) {
+    pub(crate) async fn select(&mut self, mut tx: UnboundedSender<CommonSelectRst>) -> () {
+        if !self.initialized {
+            return;
+        }
+
+        let mut selected_rst = CommonSelectRst::new();
         for i in 0..self.backup_codes.len() {
             let item = self.backup_codes.get(i).unwrap();
             let temp_ts_code = String::from(item);
@@ -109,41 +120,43 @@ impl EMASelect {
             }
 
             // TODO -- 待完善
-            let single_rst = SingleShortTimeSelectResult {
+            let single_rst = SingleCommonRst {
                 ts_code: String::from(&temp_ts_code),
                 ts_name: String::from(self.code2name_map.get(temp_ts_code.as_str()).unwrap()),
                 curr_price: pre_price,
                 level: 0,
                 source: String::from("EMA Select"),
                 level_pct: 0.0,
-                line_style: line_type
+                line_style: line_type,
+                // TODO 完善结果集
+                rst_style: 0
             };
-            self.judge_can_add(single_rst, line_type);
+            EMASelect::judge_can_add(single_rst, &mut selected_rst, line_type);
         }
         // FIXME -- 内存间歇性抽风，要不要这个地方就不自己存了，反正自己也不用
-        tx.send(self.selected_rst.clone());
+        tx.send(selected_rst);
     }
 
-    fn judge_can_add(&mut self, mut single_rst: SingleShortTimeSelectResult, up_state: i32) {
+    fn judge_can_add(mut single_rst: SingleCommonRst, select_rst: &mut CommonSelectRst, up_state: i32) {
         match up_state {
             -1 => {
                 single_rst.level = 0;
             },
             0 => {
                 single_rst.level = 90;
-                self.selected_rst.add_selected(single_rst);
+                select_rst.add_selected(single_rst);
             },
             1 => {
                 single_rst.level = 10;
-                self.selected_rst.add_selected(single_rst);
+                select_rst.add_selected(single_rst);
             },
             2 => {
                 single_rst.level = 60;
-                self.selected_rst.add_selected(single_rst);
+                select_rst.add_selected(single_rst);
             },
             4 => {
                 single_rst.level = 40;
-                self.selected_rst.add_selected(single_rst);
+                select_rst.add_selected(single_rst);
             },
             _ => {}
         }

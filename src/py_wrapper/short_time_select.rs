@@ -1,12 +1,8 @@
 use crate::sql;
-
-
 use pyo3::prelude::*;
 use async_std::task;
 use sqlx::Row;
 use crate::cache::AsyncRedisOperation;
-
-use crate::selector::ShortTimeSelect;
 
 #[pyclass]
 pub struct ShortTimeStrategy {
@@ -29,8 +25,8 @@ impl ShortTimeStrategy {
         }
 
         task::spawn(async {
-            let mut select = ShortTimeSelect::new().await;
-            select.select().await;
+            // let mut select = ShortTimeSelect::new().await;
+            // select.select().await;
         });
 
         self.is_started = true;

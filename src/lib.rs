@@ -2,6 +2,7 @@ mod py_wrapper;
 mod initialize;
 mod time;
 mod sql;
+mod file;
 mod config;
 mod results;
 mod calculate;

@@ -75,6 +75,7 @@ pub fn curr_date() -> DateTime<Local> {
     Local::now()
 }
 
+/// 通用模式："%Y%m%d"，备忘一下
 pub fn curr_date_str(format: &str) -> String {
     let date_time = Local::now();
     date_time.format(format).to_string()
