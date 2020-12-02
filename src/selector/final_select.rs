@@ -1,9 +1,8 @@
-use crate::selector::{CommonSelectRst};
+use crate::selector::{CommonSelectRst, FINAL_TYPE};
 use crate::file::read_txt_file;
 use std::collections::HashMap;
 use crate::selector::ema_select::EMASelect;
 use crate::selector::history_down_select::HistoryDownSelect;
-use crate::py_wrapper::ShortTimeStrategy;
 use futures::{Future, StreamExt};
 use crate::selector::rst_process::CommonTimeRstProcess;
 use crate::utils::time_utils::SleepDuringStop;
@@ -13,7 +12,11 @@ use futures::channel::mpsc;
 use chrono::Duration;
 use std::pin::Pin;
 use futures::channel::mpsc::UnboundedSender;
-use std::sync::{Arc, Mutex};
+use std::ops::DerefMut;
+// async_std的MutexGuard是实现了Send的，标准库的MutexGuard则没有
+// 否则的话你说两个future如何并行执行？？？？？？？？？？？？？（按照现在这写法）
+use async_std::sync::{Mutex, Arc};
+
 
 pub struct AllSelectStrategy {
     rst_processor: CommonTimeRstProcess,
@@ -49,12 +52,12 @@ impl AllSelectStrategy {
         }
 
         if self.contain_selector(&String::from(EMASelect::get_name())) {
-            let mut real_ema = self.ema_select.lock().unwrap();
+            let mut real_ema = &mut *self.ema_select.lock().await;
             real_ema.initialize().await;
         }
 
         if self.contain_selector(&String::from(HistoryDownSelect::get_name())) {
-            let mut real_history_down = self.history_down.lock().unwrap();
+            let mut real_history_down = &mut *self.history_down.lock().await;
             real_history_down.initialize().await;
         }
     }
@@ -76,15 +79,15 @@ impl AllSelectStrategy {
             let history_down_clone = self.history_down.clone();
             let mut tx_clone = tx.clone();
             task::spawn(async move {
-                let mut real_history_down = history_down_clone.lock().unwrap();
-                real_history_down.select(tx_clone);
+                let mut real_history_down = &mut *history_down_clone.lock().await;
+                real_history_down.select(tx_clone).await;
             });
 
             let ema_select_clone = self.ema_select.clone();
             tx_clone = tx.clone();
             task::spawn(async move {
-                let mut real_ema_select = ema_select_clone.lock().unwrap();
-                real_ema_select.select(tx_clone);
+                let mut real_ema_select = &mut *ema_select_clone.lock().await;
+                real_ema_select.select(tx_clone).await;
             });
             drop(tx);
 
@@ -145,7 +148,26 @@ async fn parse_selectors(selectors: String) -> Vec<String> {
         if str.len() == 0 {
             continue;
         }
+        println!("infos is {}", str);
         all_selectors.push(str);
     }
     all_selectors
+}
+
+/// 票选待选
+fn judge_wait_select(rst: &mut CommonSelectRst) {
+    // 按照从大到小的顺序排列
+    rst.select_rst.sort_by(|a, b| {
+       b.level.cmp(&a.level)
+    });
+
+    // 选出多少只股票来，由Config来判定
+    let config = &crate::initialize::CONFIG_INFO.get().unwrap().wait_select_config;
+    let num = config.max_wait_select_each_day;
+
+    for i in 0..num {
+        if let Some(rst) = rst.select_rst.get_mut(i as usize) {
+            rst.rst_style = rst.rst_style & FINAL_TYPE;
+        }
+    }
 }

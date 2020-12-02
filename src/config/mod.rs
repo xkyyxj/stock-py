@@ -1,6 +1,8 @@
 use crate::config::history_down_config::HistoryDownConfig;
+use crate::config::wait_select_config::WaitSelectConfig;
 
 mod history_down_config;
+mod wait_select_config;
 
 /// 数据库最大连接数
 pub(crate) static MYSQL_MAX_CONNECTION: usize = 100;
@@ -48,6 +50,7 @@ pub struct Config {
     pub(crate) down_then_flow_min_days: i64,
     
     pub history_down_config: HistoryDownConfig,
+    pub wait_select_config: WaitSelectConfig,
 }
 
 impl Config {
@@ -68,7 +71,10 @@ impl Config {
             down_then_flow_min_days: DOWN_THEN_FLOW_MIN_DAYS,
 
             // 历史低值配置
-            history_down_config: HistoryDownConfig::new()
+            history_down_config: HistoryDownConfig::new(),
+
+            // 每日待选配置
+            wait_select_config: WaitSelectConfig::new(),
         }
     }
 

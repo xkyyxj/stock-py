@@ -7,6 +7,7 @@ use crate::results::TimeIndexBaseInfo;
 use crate::selector::{CommonSelectRst, SingleCommonRst, SHORT_TYPE, FINAL_TYPE, LONG_TYPE};
 use futures::channel::mpsc::UnboundedSender;
 use futures::SinkExt;
+use chrono::Local;
 
 pub struct HistoryDownAnaInfo {
     ts_code: String,
@@ -123,7 +124,7 @@ impl HistoryDownSelect {
             };
             selected_rst.add_selected(single_rst);
         }
-        tx.send(selected_rst);
+        tx.send(selected_rst).await;
     }
 }
 

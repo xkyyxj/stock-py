@@ -1,5 +1,5 @@
-# ¶ÌÏßÑ¡ÔñÆ÷
-short_time:ema_select
+# çŸ­çº¿é€‰æ‹©å™¨
+short_time=ema_select,history_down_select
 
-# ³¤ÏßÑ¡ÔñÆ÷
-long_time:
+# é•¿çº¿é€‰æ‹©å™¨
+long_time=

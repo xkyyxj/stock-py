@@ -3,17 +3,18 @@ use pyo3::prelude::*;
 use async_std::task;
 use sqlx::Row;
 use crate::cache::AsyncRedisOperation;
+use crate::selector::AllSelectStrategy;
 
 #[pyclass]
-pub struct ShortTimeStrategy {
+pub struct CommonSelectStrategy {
     pub(crate) is_started: bool,
 }
 
 #[pymethods]
-impl ShortTimeStrategy {
+impl CommonSelectStrategy {
     #[new]
     pub(crate) fn new() -> Self {
-        ShortTimeStrategy {
+        CommonSelectStrategy {
             is_started: false
         }
     }
@@ -23,12 +24,11 @@ impl ShortTimeStrategy {
         if self.is_started {
             return
         }
-
         task::spawn(async {
-            // let mut select = ShortTimeSelect::new().await;
-            // select.select().await;
+            let mut select = AllSelectStrategy::new().await;
+            select.initialize().await;
+            select.select().await;
         });
-
         self.is_started = true;
     }
 

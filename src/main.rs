@@ -13,7 +13,6 @@ mod selector;
 mod simulate;
 
 use std::collections::HashMap;
-use crate::py_wrapper::ShortTimeStrategy;
 use chrono::{Local, DateTime};
 use std::time::Duration;
 use std::thread::sleep;
@@ -25,6 +24,8 @@ use futures::channel::mpsc;
 use crate::file::read_txt_file;
 use async_std::fs::File;
 use futures::AsyncWriteExt;
+use async_std::sync::{Mutex, Arc};
+use crate::py_wrapper::CommonSelectStrategy;
 
 struct A {
     data: i32,
@@ -72,25 +73,30 @@ fn main() {
     // let mut short_time_select = ShortTimeStrategy::new();
     // short_time_select.__call__();
 
-    let future1 = async {
-        println!("first");
-        sleep(Duration::from_secs(10));
-        println!("first_end;");
-    };
+    // let a = A{ data: 0 };
+    // let test = Arc::new(Mutex::new(a));
+    // let test2 = test.clone();
+    // task::spawn(async move {
+    //     println!("a start");
+    //     let mut testa1 = &mut *test2.lock().await;
+    //     println!("before sleep111");
+    //     async_std::task::sleep(Duration::from_secs(5)).await;
+    //     testa1.data = 100;
+    //     println!("a end  val is {}", testa1.data);
+    // });
+    //
+    // let test3 = test.clone();
+    // task::spawn(async move {
+    //     println!("b start");
+    //     let mut testa1 = &mut *test3.lock().await;
+    //     println!("before sleep222");
+    //     async_std::task::sleep(Duration::from_secs(5)).await;
+    //     testa1.data = 200;
+    //     println!("b end  val is {}", testa1.data);
+    // });
 
-    let future2 = async {
-        println!("second");
-        sleep(Duration::from_secs(10));
-        println!("second_end;");
-    };
-
-    let future3 = async {
-        futures::join!(future1, future2);
-    };
-
-    task::block_on(future3);
-
-
+    let mut selector = CommonSelectStrategy::new();
+    selector.__call__();
 
     // 文件读取以及解析验证
     // task::block_on(async {

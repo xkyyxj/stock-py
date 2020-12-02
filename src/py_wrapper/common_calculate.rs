@@ -5,10 +5,10 @@ use futures::executor;
 use async_std::task;
 use crate::calculate::{ calculate_air_castle };
 use crate::calculate::calculate_history_down;
-use crate::py_wrapper::ShortTimeStrategy;
+use crate::py_wrapper::common_select::CommonSelectStrategy;
 
 pub fn init_common_calculate(module: &PyModule) {
-    module.add_class::<ShortTimeStrategy>().unwrap();
+    module.add_class::<CommonSelectStrategy>().unwrap();
     module.add_wrapped(wrap_pyfunction!(calculate_history_down_async)).unwrap();
     module.add_wrapped(wrap_pyfunction!(calculate_history_down_sync)).unwrap();
 }

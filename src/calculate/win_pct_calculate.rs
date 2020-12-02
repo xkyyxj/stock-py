@@ -9,11 +9,11 @@ use crate::file::read_txt_file;
 // 可以写定一个列名称形态，例如形如：win_x，其中x为天数
 
 pub struct CalInfo {
-    pub table_name: String,     // 表名
+    table_name: String,     // 表名
     pk_name: String,        // 主键名称
     in_time_name: String,   // 进入时间字段
     in_price_name: String,  // 进入价格字段
-    pub cal_days: Vec::<i64>    // 计算哪些天之前的
+    cal_days: Vec::<i64>    // 计算哪些天之前的
 }
 
 pub struct CalItem {

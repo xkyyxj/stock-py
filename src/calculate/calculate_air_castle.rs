@@ -10,6 +10,7 @@ use crate::results::{AirCastle, DBResult};
 use crate::utils::time_utils;
 
 /// 空中楼阁理论：疯涨的可能会继续疯涨，博傻博傻!!!!!!
+/// version: 0.1.0
 pub async fn calculate_air_castle() -> bool {
     fn temp(conn: PoolConnection<MySql>,
             stock_codes: Vec<String>, tx: Sender<u32>,

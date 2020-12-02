@@ -8,6 +8,7 @@ use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
 use futures::channel::mpsc::{UnboundedSender};
 use crate::selector::{CommonSelectRst, SingleCommonRst};
 use futures::SinkExt;
+use chrono::Local;
 
 /// 短期选择策略
 pub struct EMAAnaInfo {
@@ -134,7 +135,7 @@ impl EMASelect {
             EMASelect::judge_can_add(single_rst, &mut selected_rst, line_type);
         }
         // FIXME -- 内存间歇性抽风，要不要这个地方就不自己存了，反正自己也不用
-        tx.send(selected_rst);
+        tx.send(selected_rst).await;
     }
 
     fn judge_can_add(mut single_rst: SingleCommonRst, select_rst: &mut CommonSelectRst, up_state: i32) {
