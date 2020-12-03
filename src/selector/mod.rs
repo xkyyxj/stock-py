@@ -75,7 +75,7 @@ impl CommonSelectRst {
                 item.line_style = info.line_style;
                 item.level = info.level;
                 item.curr_price = info.curr_price;
-                item.rst_style = item.rst_style & info.rst_style;
+                item.rst_style = item.rst_style | info.rst_style;
                 // TODO source如何处理，得看下
                 contains = true;
             }
@@ -98,7 +98,7 @@ impl CommonSelectRst {
                         self_item.level = 100;
                     }
                     // 更正一下结果适用范围（短线、长线？）
-                    self_item.rst_style = self_item.rst_style & other_item.rst_style;
+                    self_item.rst_style = self_item.rst_style | other_item.rst_style;
                     contain = true;
                     break;
                 }
@@ -141,7 +141,7 @@ impl CommonSelectRst {
                     // 对于self_item.level > other_item.level，一概不处理
 
                     // 更正一下结果适用范围（短线、长线？）
-                    self_item.rst_style = self_item.rst_style & other_item.rst_style;
+                    self_item.rst_style = self_item.rst_style | other_item.rst_style;
                     self_item.line_style = other_item.line_style;
                     contain = true;
                     break;

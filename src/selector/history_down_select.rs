@@ -120,7 +120,7 @@ impl HistoryDownSelect {
                 source: "history_down".to_string(),
                 level_pct: 0.0,
                 line_style: 0,
-                rst_style: SHORT_TYPE & LONG_TYPE & FINAL_TYPE
+                rst_style: SHORT_TYPE | LONG_TYPE
             };
             selected_rst.add_selected(single_rst);
         }

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use sqlx::Row;
 use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
 use futures::channel::mpsc::{UnboundedSender};
-use crate::selector::{CommonSelectRst, SingleCommonRst};
+use crate::selector::{CommonSelectRst, SingleCommonRst, SHORT_TYPE, LONG_TYPE};
 use futures::SinkExt;
 use chrono::Local;
 
@@ -130,7 +130,7 @@ impl EMASelect {
                 level_pct: 0.0,
                 line_style: line_type,
                 // TODO 完善结果集
-                rst_style: 0
+                rst_style: SHORT_TYPE | LONG_TYPE
             };
             EMASelect::judge_can_add(single_rst, &mut selected_rst, line_type);
         }

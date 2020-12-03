@@ -63,7 +63,7 @@ impl CommonTimeRstProcess {
     pub async fn process(&mut self, rst: &CommonSelectRst, curr_time: &DateTime<Local>) {
         self.all_result.append(rst);
         // 判定是否已经到了交易日结束的时候了
-        self.sync_to_db(self.time_check.check_curr_night_rest(curr_time));
+        self.sync_to_db(self.time_check.check_curr_night_rest(curr_time)).await;
     }
 
     async fn sync_to_db(&self, is_history: bool) {
@@ -101,6 +101,7 @@ async fn sync_to_short_time(single_rst: &SingleCommonRst, curr_time: &String, is
     query = query.bind(single_rst.source.clone());
     query = query.bind(single_rst.level);
     query = query.bind(single_rst.line_style);
+    println!("sql is {}", sql);
     match query.execute(conn).await {
         Ok(_) => {},
         Err(err) => {
@@ -128,6 +129,7 @@ async fn sync_to_long_time(single_rst: &SingleCommonRst, curr_time: &String, is_
     query = query.bind(single_rst.source.clone());
     query = query.bind(single_rst.level);
     query = query.bind(single_rst.line_style);
+    println!("sql is {}", sql);
     match query.execute(conn).await {
         Ok(_) => {},
         Err(err) => {
@@ -155,6 +157,7 @@ async fn sync_to_wait_select(single_rst: &SingleCommonRst, curr_time: &String, i
     query = query.bind(single_rst.source.clone());
     query = query.bind(single_rst.level);
     query = query.bind(single_rst.line_style);
+    println!("sql is {}", sql);
     match query.execute(conn).await {
         Ok(_) => {},
         Err(err) => {

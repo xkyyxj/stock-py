@@ -73,7 +73,7 @@ impl AllSelectStrategy {
         let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
         loop {
             let curr_time = Local::now();
-            self.time_check.check_sleep(&curr_time).await;
+            // self.time_check.check_sleep(&curr_time).await;
             let (mut tx, rx) = mpsc::unbounded::<CommonSelectRst>();
             // 如果添加了新的选择策略，别忘了在这儿添加，现在只能是这样了…………，动态扩展？？？？？？？呵呵哒哒
             let history_down_clone = self.history_down.clone();
