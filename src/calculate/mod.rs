@@ -18,10 +18,6 @@ use sqlx::{Row, MySql};
 use futures::{StreamExt, SinkExt};
 use sqlx::pool::PoolConnection;
 use futures::channel::mpsc::Sender;
-use combine::lib::collections::hash_map::RandomState;
-
-// temp ----------------------------------
-pub use win_pct_calculate::parse_table_info;
 
 pub async fn calculate_wrapper(target_function: fn(PoolConnection<MySql>, Vec<String>, Sender<u32>, HashMap<String, String>)) -> bool {
     let columns = vec!["ts_code", "name"];
@@ -45,7 +41,6 @@ pub async fn calculate_wrapper(target_function: fn(PoolConnection<MySql>, Vec<St
         code2name_map.insert(String::from(&ts_code), ts_name);
         ts_codes.push(ts_code);
         if count == each_group_num {
-            println!("group count is {}", grp_count);
             let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             let temp_tx = mpsc::Sender::clone(&tx);
             target_function(conn, ts_codes, temp_tx, code2name_map);
@@ -71,4 +66,11 @@ pub async fn calculate_wrapper(target_function: fn(PoolConnection<MySql>, Vec<St
     let ret_val = rx.collect::<Vec<u32>>().await;
     println!("cal finished!!");
     ret_val.len() == grp_count
+}
+
+/// 异步计算所有备选结果
+/// 此处鉴于数据库压力，就一个一个的计算吧（完成的添加到里面来）
+pub async fn calculate_all() {
+    calculate_history_down().await;
+    calculate_air_castle().await;
 }

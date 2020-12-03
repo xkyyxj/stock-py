@@ -12,7 +12,7 @@ use chrono::Local;
 pub struct HistoryDownAnaInfo {
     ts_code: String,
     history_down_price: f64,
-    pk_history_down: String,
+    pk_history_down: i64,
 }
 
 pub struct HistoryDownSelect {
@@ -49,7 +49,7 @@ impl HistoryDownSelect {
                 let temp_info = HistoryDownAnaInfo {
                     ts_code: row.get("ts_code"),
                     history_down_price: row.get::<'_, f64, &str>("his_down_price"),
-                    pk_history_down: row.get("pk_history_down"),
+                    pk_history_down: row.get::<'_, i64, &str>("pk_history_down"),
                 };
                 self.backup.push(temp_info);
             }
@@ -109,7 +109,7 @@ impl HistoryDownSelect {
 
             // 第三步：如果成功了，更新history_down的selected字段，并且添加到选中结果集当中去
             let mut sql = String::from("update history_down set selected='Y' where pk_history_down='");
-            sql = sql + item.pk_history_down.as_str() + "'";
+            sql = sql + item.pk_history_down.to_string().as_str() + "'";
             sql::async_common_exe(sql.as_str()).await;
             // TODO -- level以及ts_name字段都没有赋值
             let single_rst = SingleCommonRst {

@@ -19,7 +19,7 @@ use std::thread::sleep;
 use std::str::FromStr;
 use async_std::task;
 use calculate::calculate_air_castle;
-use crate::calculate::{calculate_history_down, calculate_air_castle_s, parse_table_info, win_calculate};
+use crate::calculate::{calculate_history_down, calculate_air_castle_s, win_calculate};
 use futures::channel::mpsc;
 use crate::file::read_txt_file;
 use async_std::fs::File;
