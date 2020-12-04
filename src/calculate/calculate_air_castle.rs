@@ -73,11 +73,13 @@ pub async fn calculate_air_castle_s(mut conn: PoolConnection<MySql>,
                 base_infos.push(row.get::<'_, f64, &str>("close"));
             }
         }).await;
+        // println!("sql is {}, up days is {}", base_info_sql, up_days);
 
-        let first_index = base_infos.len() - up_days as usize;
+        let first_index = up_days as usize - 1;
         let mut first_close = base_infos.get(first_index).unwrap();
         let mut last_close = base_infos.first().unwrap();
         let up_pct = (last_close - first_close) / first_close;
+        // println!("first index is {}, first_close is {}, last close is {}", first_index, first_close, last_close);
         if up_pct >= config.air_castle_up_pct {
             // 加入到上涨空中楼阁行列当中
             let mut air_castle_val = AirCastle::new();

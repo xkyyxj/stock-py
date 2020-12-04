@@ -73,7 +73,7 @@ impl AllSelectStrategy {
         let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
         loop {
             let curr_time = Local::now();
-            // self.time_check.check_sleep(&curr_time).await;
+            self.time_check.check_sleep(&curr_time).await;
             let (mut tx, rx) = mpsc::unbounded::<CommonSelectRst>();
             // 如果添加了新的选择策略，别忘了在这儿添加，现在只能是这样了…………，动态扩展？？？？？？？呵呵哒哒
             let history_down_clone = self.history_down.clone();
@@ -97,6 +97,7 @@ impl AllSelectStrategy {
                 temp_rst.merge(&item);
             }
             // TODO -- 如何选择出最终的wait_select结果？？？？？
+            judge_wait_select(&mut temp_rst);
             self.rst_processor.process(&temp_rst, &curr_time).await;
 
             // 每X秒获取一次(由analyze_time_delta指定)
@@ -165,9 +166,14 @@ fn judge_wait_select(rst: &mut CommonSelectRst) {
     let config = &crate::initialize::CONFIG_INFO.get().unwrap().wait_select_config;
     let num = config.max_wait_select_each_day;
 
-    for i in 0..num {
+    for i in 0..rst.select_rst.len() {
         if let Some(rst) = rst.select_rst.get_mut(i as usize) {
-            rst.rst_style = rst.rst_style & FINAL_TYPE;
+            if i < num as usize {
+                rst.rst_style = rst.rst_style | FINAL_TYPE;
+            }
+            else {
+                rst.rst_style = rst.rst_style & !FINAL_TYPE;
+            }
         }
     }
 }

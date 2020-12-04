@@ -98,6 +98,15 @@ fn main() {
     let mut selector = CommonSelectStrategy::new();
     selector.__call__();
 
+    // task::block_on(async {
+    //     // let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+    //     // let (mut tx, rx) = mpsc::channel::<u32>(4000);
+    //     // let ts_codes = vec![String::from("600707.SH")];
+    //     // let map = HashMap::<String, String>::new();
+    //     // calculate_air_castle_s(conn, ts_codes, tx, map).await;
+    //     calculate_air_castle().await;
+    // });
+
     // 文件读取以及解析验证
     // task::block_on(async {
     //     win_calculate().await;

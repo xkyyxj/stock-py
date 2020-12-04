@@ -126,6 +126,11 @@ impl HistoryDownSelect {
         }
         tx.send(selected_rst).await;
     }
+
+    /// 判定历史低值买入等级的函数
+    fn judge_level() {
+
+    }
 }
 
 fn judge_is_up(redis_info: &Vec::<TimeIndexBaseInfo>) -> bool {

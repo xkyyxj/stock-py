@@ -70,6 +70,15 @@ impl CommonTimeRstProcess {
         let pool = crate::initialize::MYSQL_POOL.get().unwrap();
         let mut conn = pool.acquire().await.unwrap();
         let curr_time_str = self.all_result.ts.format("%Y%m%d %H:%M:%S").to_string();
+        if !is_history {
+            let mut del_sql = "delete from short_time_select";
+            sql::async_common_exe(del_sql).await;
+            del_sql = "delete from long_time_select";
+            sql::async_common_exe(del_sql).await;
+            del_sql = "delete from wait_select";
+            sql::async_common_exe(del_sql).await;
+        }
+
         for item in &self.all_result.select_rst {
             if item.rst_style & SHORT_TYPE > 0 {
                 sync_to_short_time(item, &curr_time_str, is_history, &mut conn).await;
@@ -101,7 +110,6 @@ async fn sync_to_short_time(single_rst: &SingleCommonRst, curr_time: &String, is
     query = query.bind(single_rst.source.clone());
     query = query.bind(single_rst.level);
     query = query.bind(single_rst.line_style);
-    println!("sql is {}", sql);
     match query.execute(conn).await {
         Ok(_) => {},
         Err(err) => {
@@ -129,7 +137,6 @@ async fn sync_to_long_time(single_rst: &SingleCommonRst, curr_time: &String, is_
     query = query.bind(single_rst.source.clone());
     query = query.bind(single_rst.level);
     query = query.bind(single_rst.line_style);
-    println!("sql is {}", sql);
     match query.execute(conn).await {
         Ok(_) => {},
         Err(err) => {
@@ -149,7 +156,7 @@ async fn sync_to_wait_select(single_rst: &SingleCommonRst, curr_time: &String, i
     else {
         sql = sql + "wait_select";
     }
-    sql = sql + "(ts_code, in_price, in_time, source, level, line_style) values(?,?,?,?,?,?)";
+    sql = sql + "(ts_code, in_price, in_date, in_reason, level, line_style) values(?,?,?,?,?,?)";
     let mut query = sqlx::query(sql.as_str());
     query = query.bind(single_rst.ts_code.clone());
     query = query.bind(single_rst.curr_price);
@@ -157,7 +164,6 @@ async fn sync_to_wait_select(single_rst: &SingleCommonRst, curr_time: &String, i
     query = query.bind(single_rst.source.clone());
     query = query.bind(single_rst.level);
     query = query.bind(single_rst.line_style);
-    println!("sql is {}", sql);
     match query.execute(conn).await {
         Ok(_) => {},
         Err(err) => {
