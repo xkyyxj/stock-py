@@ -99,6 +99,7 @@ impl CommonSelectRst {
                     }
                     // 更正一下结果适用范围（短线、长线？）
                     self_item.rst_style = self_item.rst_style | other_item.rst_style;
+                    self_item.source = String::from(&self_item.source) + other_item.source.as_str();
                     contain = true;
                     break;
                 }
@@ -137,6 +138,7 @@ impl CommonSelectRst {
                         if self_item.level < other_item.level {
                             self_item.level = other_item.level;
                         }
+                        self_item.source = String::from(&self_item.source) + other_item.source.as_str();
                     }
                     // 对于self_item.level > other_item.level，一概不处理
 

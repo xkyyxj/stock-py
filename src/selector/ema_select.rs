@@ -126,7 +126,7 @@ impl EMASelect {
                 ts_name: String::from(self.code2name_map.get(temp_ts_code.as_str()).unwrap()),
                 curr_price: pre_price,
                 level: 0,
-                source: String::from("EMA Select"),
+                source: String::from("EMA"),
                 level_pct: 0.0,
                 line_style: line_type,
                 // TODO 完善结果集

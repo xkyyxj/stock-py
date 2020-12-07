@@ -3,23 +3,20 @@ use std::collections::HashMap;
 use crate::sql;
 use sqlx::Row;
 use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
-use crate::results::TimeIndexBaseInfo;
+use crate::results::{TimeIndexBaseInfo, HistoryDown};
 use crate::selector::{CommonSelectRst, SingleCommonRst, SHORT_TYPE, FINAL_TYPE, LONG_TYPE};
 use futures::channel::mpsc::UnboundedSender;
 use futures::SinkExt;
 use chrono::Local;
 
-pub struct HistoryDownAnaInfo {
-    ts_code: String,
-    history_down_price: f64,
-    pk_history_down: i64,
-}
 
 pub struct HistoryDownSelect {
     selected: Vec::<String>,
-    backup: Vec::<HistoryDownAnaInfo>,
+    backup: Vec::<HistoryDown>,
     redis_ope: AsyncRedisOperation,
     initialized: bool,
+    max_down_days: i64,                 // 多少日内最低的最大值（back_up当中的最大值）
+    max_up_pct: f64,                    // 最后一天相比历史低值的涨幅的最大值（back_up当中的最大值）
 }
 
 impl HistoryDownSelect {
@@ -28,7 +25,9 @@ impl HistoryDownSelect {
             selected: vec![],
             backup: vec![],
             redis_ope: AsyncRedisOperation::new().await,
-            initialized: false
+            initialized: false,
+            max_down_days: 0,
+            max_up_pct: 0.0
         }
     }
 
@@ -46,11 +45,23 @@ impl HistoryDownSelect {
         sql = sql + last_date_str.as_str() + "'";
         sql::async_common_query(sql.as_str(), |rows| {
             for row in rows {
-                let temp_info = HistoryDownAnaInfo {
+                let temp_info = HistoryDown {
                     ts_code: row.get("ts_code"),
-                    history_down_price: row.get::<'_, f64, &str>("his_down_price"),
+                    in_date: row.get("in_date"),
+                    in_price: row.get::<'_, f64, &str>("in_price"),
+                    history_len: row.get::<'_, i64, &str>("history_len"),
+                    delta_pct: row.get::<'_, f64, &str>("delta_pct"),
+                    his_down_price: row.get::<'_, f64, &str>("his_down_price"),
                     pk_history_down: row.get::<'_, i64, &str>("pk_history_down"),
                 };
+
+                if temp_info.history_len > self.max_down_days {
+                    self.max_down_days = temp_info.history_len;
+                }
+
+                if temp_info.delta_pct > self.max_up_pct {
+                    self.max_up_pct = temp_info.delta_pct;
+                }
                 self.backup.push(temp_info);
             }
         }).await;
@@ -90,7 +101,7 @@ impl HistoryDownSelect {
             let last_info = real_redis_info.last().unwrap();
             let last_price = last_info.curr_price;
             // 1. 最新价格比历史最低价上涨幅度在config信息里面标注的幅度之间
-            let up_pct = (last_price - item.history_down_price) / item.history_down_price;
+            let up_pct = (last_price - item.his_down_price) / item.his_down_price;
             selected = selected && up_pct > min_up_pct && up_pct < max_up_pct;
             if !selected {
                 continue;
@@ -116,8 +127,8 @@ impl HistoryDownSelect {
                 ts_code: String::from(&item.ts_code),
                 ts_name: "".to_string(),
                 curr_price: last_price,
-                level: 0,
-                source: "history_down".to_string(),
+                level: 100,
+                source: "Down".to_string(),
                 level_pct: 0.0,
                 line_style: 0,
                 rst_style: SHORT_TYPE | LONG_TYPE
@@ -127,8 +138,13 @@ impl HistoryDownSelect {
         tx.send(selected_rst).await;
     }
 
-    /// 判定历史低值买入等级的函数
-    fn judge_level() {
+    /// 判定历史低值买入等级的函数，逻辑如下：
+    /// 1. 多少天最低值，越长时间评分给个越高的？？
+    /// 2. 到目前为止的上涨幅度，涨幅越高的评分越低？
+    fn judge_level(&self, val: &HistoryDown) {
+        // 第一步：当前价格的历史区间长度
+        let length_pct = val.history_len / self.max_down_days;
+        let up_pct_pct = val.delta_pct / self.max_up_pct;
 
     }
 }
