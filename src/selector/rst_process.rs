@@ -60,10 +60,11 @@ impl CommonTimeRstProcess {
         }
     }
 
-    pub async fn process(&mut self, rst: &CommonSelectRst, curr_time: &DateTime<Local>) {
-        self.all_result.append(rst);
+    pub async fn process(&mut self, rst: &CommonSelectRst, curr_time: &DateTime<Local>) -> Vec<String> {
+        let new_stocks = self.all_result.append(rst);
         // 判定是否已经到了交易日结束的时候了
         self.sync_to_db(self.time_check.check_curr_night_rest(curr_time)).await;
+        new_stocks
     }
 
     async fn sync_to_db(&self, is_history: bool) {

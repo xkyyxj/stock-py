@@ -98,7 +98,13 @@ impl AllSelectStrategy {
             }
             // TODO -- 如何选择出最终的wait_select结果？？？？？
             judge_wait_select(&mut temp_rst);
-            self.rst_processor.process(&temp_rst, &curr_time).await;
+            let new_stocks = self.rst_processor.process(&temp_rst, &curr_time).await;
+            let title = String::from("new s");
+            let mut content = String::from("");
+            for item in new_stocks {
+                content = content + item.as_str() + ",";
+            }
+            taskbar.show_win_toast(title, content);
 
             // 每X秒获取一次(由analyze_time_delta指定)
             let duration = Duration::seconds(ana_delta_time);
@@ -156,6 +162,7 @@ async fn parse_selectors(selectors: String) -> Vec<String> {
 }
 
 /// 票选待选
+/// 根据config当中指定的，将评分最高的几只股票放到wait_select当中
 fn judge_wait_select(rst: &mut CommonSelectRst) {
     // 按照从大到小的顺序排列
     rst.select_rst.sort_by(|a, b| {

@@ -13,7 +13,7 @@ mod selector;
 mod simulate;
 
 use std::collections::HashMap;
-use chrono::{Local, DateTime};
+use chrono::{Local, DateTime, Datelike, TimeZone};
 use std::time::Duration;
 use std::thread::sleep;
 use std::str::FromStr;
@@ -23,9 +23,10 @@ use crate::calculate::{calculate_history_down, calculate_air_castle_s, win_calcu
 use futures::channel::mpsc;
 use crate::file::read_txt_file;
 use async_std::fs::File;
-use futures::AsyncWriteExt;
+use futures::{AsyncWriteExt, StreamExt};
 use async_std::sync::{Mutex, Arc};
 use crate::py_wrapper::CommonSelectStrategy;
+use crate::selector::{EMASelect, CommonTimeRstProcess, CommonSelectRst};
 
 struct A {
     data: i32,
@@ -97,6 +98,22 @@ fn main() {
 
     let mut selector = CommonSelectStrategy::new();
     selector.__call__();
+    // task::block_on(async {
+    //     let mut select = EMASelect::new().await;
+    //     select.initialize().await;
+    //
+    //     let (mut tx, rx) = mpsc::unbounded::<CommonSelectRst>();
+    //     select.select(tx).await;
+    //     let all_common_rst = rx.collect::<Vec<CommonSelectRst>>().await;
+    //
+    //     let local: DateTime<Local> = Local::now();
+    //     let year = local.date().year();
+    //     let month = local.date().month();
+    //     let day = local.date().day();
+    //     let temp_curr_time = Local.ymd(year, month, day).and_hms_milli(11, 29, 59, 0);
+    //     let mut rst_process = CommonTimeRstProcess::new();
+    //     rst_process.process(all_common_rst.get(0).unwrap(), &temp_curr_time).await;
+    // });
 
     // task::block_on(async {
     //     // let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();

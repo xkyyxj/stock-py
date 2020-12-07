@@ -5,6 +5,8 @@ mod history_down_select;
 
 use chrono::{DateTime, Local};
 pub use final_select::AllSelectStrategy;
+pub use ema_select::EMASelect;
+pub use rst_process::CommonTimeRstProcess;
 
 static ALWAYS_DOWN: i32 = -1;       // 一直下降
 static DOWN_THEN_UP: i32 = 0;       // 经历过拐点(先下降后上升)

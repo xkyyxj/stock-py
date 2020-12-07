@@ -65,18 +65,18 @@ impl EMASelect {
             query_str = query_str + " order by trade_date desc limit ";
             query_str = query_str + ema_up_days.to_string().as_str();
             let mut is_always_up = true;
-            let mut pre_date = String::from("0000-00-00");
-            let mut pre_ema_val = 0f64;
+            let mut pre_date = String::from("9999-99-99");
+            let mut pre_ema_val = f64::MAX;
             sql::async_common_query(query_str.as_str(), |rows| {
                 for item in rows {
                     let trade_date: String = item.get("trade_date");
                     let ema_val = item.get::<'_, f64, &str>(ema_field.as_str());
                     // 严格上涨
-                    if is_always_up && trade_date > pre_date && ema_val > pre_ema_val {
+                    if is_always_up && trade_date < pre_date && ema_val < pre_ema_val {
                         pre_date = trade_date;
                         pre_ema_val = ema_val;
                     }
-                    else if trade_date > pre_date {
+                    else if trade_date < pre_date {
                         is_always_up = false;
                     }
                 }
