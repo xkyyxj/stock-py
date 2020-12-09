@@ -140,7 +140,7 @@ impl CommonSelectRst {
                         if self_item.level < other_item.level {
                             self_item.level = other_item.level;
                         }
-                        self_item.source = String::from(&self_item.source) + other_item.source.as_str();
+                        self_item.source = other_item.source.clone();
                     }
                     // 对于self_item.level > other_item.level，一概不处理
 
