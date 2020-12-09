@@ -19,7 +19,7 @@ use std::thread::sleep;
 use std::str::FromStr;
 use async_std::task;
 use calculate::calculate_air_castle;
-use crate::calculate::{calculate_history_down, calculate_air_castle_s, win_calculate};
+use crate::calculate::{calculate_history_down, calculate_air_castle_s, win_calculate, calculate_history_down_s};
 use futures::channel::mpsc;
 use crate::file::read_txt_file;
 use async_std::fs::File;
@@ -96,8 +96,8 @@ fn main() {
     //     println!("b end  val is {}", testa1.data);
     // });
 
-    let mut selector = CommonSelectStrategy::new();
-    selector.__call__();
+    // let mut selector = CommonSelectStrategy::new();
+    // selector.__call__();
     // task::block_on(async {
     //     let mut select = EMASelect::new().await;
     //     select.initialize().await;
@@ -115,14 +115,14 @@ fn main() {
     //     rst_process.process(all_common_rst.get(0).unwrap(), &temp_curr_time).await;
     // });
 
-    // task::block_on(async {
-    //     // let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
-    //     // let (mut tx, rx) = mpsc::channel::<u32>(4000);
-    //     // let ts_codes = vec![String::from("600707.SH")];
-    //     // let map = HashMap::<String, String>::new();
-    //     // calculate_air_castle_s(conn, ts_codes, tx, map).await;
-    //     calculate_air_castle().await;
-    // });
+    task::block_on(async {
+        let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+        let (mut tx, rx) = mpsc::channel::<u32>(4000);
+        let ts_codes = vec![String::from("000429.SZ"), String::from("300800.SZ")];
+        let map = HashMap::<String, String>::new();
+        calculate_history_down_s(conn, ts_codes, tx, map).await;
+        // calculate_air_castle().await;
+    });
 
     // 文件读取以及解析验证
     // task::block_on(async {

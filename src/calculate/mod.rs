@@ -8,7 +8,7 @@ mod win_pct_calculate;
 mod calculate_steady;
 
 pub use calculate_max_win::calculate_max_win;
-pub use calculate_history_down::calculate_history_down;
+pub use calculate_history_down::{calculate_history_down, calculate_history_down_s};
 pub use calculate_air_castle::{calculate_air_castle, calculate_air_castle_s};
 pub use win_pct_calculate::win_calculate;
 use crate::sql;

@@ -24,7 +24,7 @@ pub async fn calculate_history_down() -> bool {
 /// TODO -- 可以添加如下内容：
 /// 1. MA金叉
 /// 2.
-async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
+pub async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
                             stock_codes: Vec<String>, mut tx: Sender<u32>,
                             _code2name_map: HashMap<String, String>) {
     let config = crate::initialize::CONFIG_INFO.get().unwrap();
@@ -56,20 +56,19 @@ async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
         for i in 1..all_close.len() {
             let temp_close = all_close.get(i).unwrap();
             delta_pct = (*last_day_close - *temp_close) / *temp_close;
-            if *temp_close < his_down_price {
-                his_down_price = *temp_close;
-            }
             if delta_pct < min_up_pct {
                 delta_days = delta_days + 1;
+                if *temp_close < his_down_price {
+                    his_down_price = *temp_close;
+                }
             }
             else {
                 break;
             }
         }
-        if delta_days < last_days || delta_pct > min_up_pct {
+        if delta_days < last_days {
             continue;
         }
-
         // 查询最后一天的交易日期
         let mut sql = String::from("select trade_date from stock_base_info where ts_code='");
         sql = sql + item.as_str() + "' order by trade_date desc limit 1";
