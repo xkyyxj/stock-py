@@ -13,7 +13,7 @@ use chrono::Duration;
 use std::pin::Pin;
 use futures::channel::mpsc::UnboundedSender;
 use std::ops::DerefMut;
-// async_std的MutexGuard是实现了Send的，标准库的MutexGuard则没有
+// async_std的MutexGuard是实现了Send的，标准库的MutexGuard则没有（因为task对象可能在不同的线程上切换然后执行）
 // 否则的话你说两个future如何并行执行？？？？？？？？？？？？？（按照现在这写法）
 use async_std::sync::{Mutex, Arc};
 

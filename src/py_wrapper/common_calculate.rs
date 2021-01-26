@@ -1,7 +1,6 @@
 use pyo3::{wrap_pyfunction};
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use futures::executor;
 use async_std::task;
 use crate::calculate::{ calculate_air_castle, calculate_all };
 use crate::calculate::calculate_history_down;

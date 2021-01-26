@@ -1,6 +1,6 @@
 use std::ops::Add;
 use sqlx::{Row, Error, MySql};
-use sqlx::mysql::{MySqlRow, MySqlDone};
+use sqlx::mysql::{MySqlRow};
 use async_std::task;
 use crate::results::{StockBaseInfo, DBResult};
 use sqlx::pool::PoolConnection;

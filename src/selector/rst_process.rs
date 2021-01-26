@@ -1,9 +1,5 @@
-use crate::selector::ema_select::{EMASelect};
-use crate::utils::time_utils::{SleepDuringStop, curr_date};
-use chrono::{DateTime, Local, Duration};
-use std::sync::mpsc;
-use async_std::task::sleep;
-use crate::results::DBResult;
+use crate::utils::time_utils::{SleepDuringStop};
+use chrono::{DateTime, Local};
 use crate::sql;
 use sqlx::{MySql, Row};
 use sqlx::pool::PoolConnection;
