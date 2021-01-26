@@ -3,16 +3,16 @@ use crate::file::read_txt_file;
 use std::collections::HashMap;
 use crate::selector::ema_select::EMASelect;
 use crate::selector::history_down_select::HistoryDownSelect;
-use futures::{Future, StreamExt};
+use futures::{StreamExt};
 use crate::selector::rst_process::CommonTimeRstProcess;
 use crate::utils::time_utils::SleepDuringStop;
 use chrono::Local;
 use async_std::task::{self, sleep};
 use futures::channel::mpsc;
 use chrono::Duration;
-use std::pin::Pin;
-use futures::channel::mpsc::UnboundedSender;
-use std::ops::DerefMut;
+
+
+
 // async_std的MutexGuard是实现了Send的，标准库的MutexGuard则没有（因为task对象可能在不同的线程上切换然后执行）
 // 否则的话你说两个future如何并行执行？？？？？？？？？？？？？（按照现在这写法）
 use async_std::sync::{Mutex, Arc};
@@ -52,12 +52,12 @@ impl AllSelectStrategy {
         }
 
         if self.contain_selector(&String::from(EMASelect::get_name())) {
-            let mut real_ema = &mut *self.ema_select.lock().await;
+            let real_ema = &mut *self.ema_select.lock().await;
             real_ema.initialize().await;
         }
 
         if self.contain_selector(&String::from(HistoryDownSelect::get_name())) {
-            let mut real_history_down = &mut *self.history_down.lock().await;
+            let real_history_down = &mut *self.history_down.lock().await;
             real_history_down.initialize().await;
         }
     }
@@ -74,19 +74,19 @@ impl AllSelectStrategy {
         loop {
             let curr_time = Local::now();
             self.time_check.check_sleep(&curr_time).await;
-            let (mut tx, rx) = mpsc::unbounded::<CommonSelectRst>();
+            let (tx, rx) = mpsc::unbounded::<CommonSelectRst>();
             // 如果添加了新的选择策略，别忘了在这儿添加，现在只能是这样了…………，动态扩展？？？？？？？呵呵哒哒
             let history_down_clone = self.history_down.clone();
             let mut tx_clone = tx.clone();
             task::spawn(async move {
-                let mut real_history_down = &mut *history_down_clone.lock().await;
+                let real_history_down = &mut *history_down_clone.lock().await;
                 real_history_down.select(tx_clone).await;
             });
 
             let ema_select_clone = self.ema_select.clone();
             tx_clone = tx.clone();
             task::spawn(async move {
-                let mut real_ema_select = &mut *ema_select_clone.lock().await;
+                let real_ema_select = &mut *ema_select_clone.lock().await;
                 real_ema_select.select(tx_clone).await;
             });
             drop(tx);

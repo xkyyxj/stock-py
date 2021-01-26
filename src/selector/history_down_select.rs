@@ -1,13 +1,13 @@
-use std::collections::HashMap;
+
 
 use crate::sql;
 use sqlx::Row;
 use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
 use crate::results::{TimeIndexBaseInfo, HistoryDown};
-use crate::selector::{CommonSelectRst, SingleCommonRst, SHORT_TYPE, FINAL_TYPE, LONG_TYPE};
+use crate::selector::{CommonSelectRst, SingleCommonRst, SHORT_TYPE, LONG_TYPE};
 use futures::channel::mpsc::UnboundedSender;
 use futures::SinkExt;
-use chrono::Local;
+
 
 
 pub struct HistoryDownSelect {
@@ -135,7 +135,7 @@ impl HistoryDownSelect {
             };
             selected_rst.add_selected(single_rst);
         }
-        tx.send(selected_rst).await;
+        tx.send(selected_rst).await.unwrap_or_default();
     }
 
     /// 判定历史低值买入等级的函数，逻辑如下：
@@ -143,8 +143,8 @@ impl HistoryDownSelect {
     /// 2. 到目前为止的上涨幅度，涨幅越高的评分越低？
     fn judge_level(&self, val: &HistoryDown) {
         // 第一步：当前价格的历史区间长度
-        let length_pct = val.history_len / self.max_down_days;
-        let up_pct_pct = val.delta_pct / self.max_up_pct;
+        let _length_pct = val.history_len / self.max_down_days;
+        let _up_pct_pct = val.delta_pct / self.max_up_pct;
 
     }
 }

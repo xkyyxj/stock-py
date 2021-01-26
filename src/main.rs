@@ -13,20 +13,20 @@ mod selector;
 mod simulate;
 
 use std::collections::HashMap;
-use chrono::{Local, DateTime, Datelike, TimeZone};
+use chrono::{Local, DateTime};
 use std::time::Duration;
 use std::thread::sleep;
 use std::str::FromStr;
 use async_std::task;
-use calculate::calculate_air_castle;
-use crate::calculate::{calculate_history_down, calculate_air_castle_s, win_calculate, calculate_history_down_s};
+
+use crate::calculate::{calculate_history_down_s};
 use futures::channel::mpsc;
-use crate::file::read_txt_file;
-use async_std::fs::File;
-use futures::{AsyncWriteExt, StreamExt};
-use async_std::sync::{Mutex, Arc};
-use crate::py_wrapper::CommonSelectStrategy;
-use crate::selector::{EMASelect, CommonTimeRstProcess, CommonSelectRst};
+
+
+
+
+
+
 
 struct A {
     data: i32,
@@ -117,7 +117,7 @@ fn main() {
 
     task::block_on(async {
         let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
-        let (mut tx, rx) = mpsc::channel::<u32>(4000);
+        let (tx, _rx) = mpsc::channel::<u32>(4000);
         let ts_codes = vec![String::from("000429.SZ"), String::from("300800.SZ")];
         let map = HashMap::<String, String>::new();
         calculate_history_down_s(conn, ts_codes, tx, map).await;

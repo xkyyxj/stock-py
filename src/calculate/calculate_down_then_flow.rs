@@ -1,13 +1,9 @@
-use crate::{sql, utils};
-use sqlx::{MySql, Row};
+use sqlx::{MySql};
 use futures::channel::mpsc::{ Sender };
 use futures::{SinkExt};
 use sqlx::pool::PoolConnection;
 use std::collections::HashMap;
 use async_std::task;
-use chrono::Local;
-use crate::results::{AirCastle, DBResult};
-use crate::utils::time_utils;
 
 /// 空中楼阁理论：疯涨的可能会继续疯涨，博傻博傻!!!!!!
 pub async fn calculate_down_then_flow() -> bool {
@@ -20,13 +16,13 @@ pub async fn calculate_down_then_flow() -> bool {
 }
 
 /// 单条股票的计算
-pub async fn calculate_down_then_flow_s(mut conn: PoolConnection<MySql>,
+pub async fn calculate_down_then_flow_s(_conn: PoolConnection<MySql>,
                                         stock_codes: Vec<String>, mut tx: Sender<u32>,
                                         _code2name_map: HashMap<String, String>) {
     // 基础配置信息
     let config = crate::initialize::CONFIG_INFO.get().unwrap();
-    let days = config.down_then_flow_min_days;
-    for item in stock_codes {
+    let _days = config.down_then_flow_min_days;
+    for _item in stock_codes {
         // 开始分析进程
         // 第一步：从history_down当中查询出所有N天以前入选的股票
     }

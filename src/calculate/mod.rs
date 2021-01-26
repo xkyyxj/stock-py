@@ -56,7 +56,7 @@ pub async fn calculate_wrapper(target_function: fn(PoolConnection<MySql>, Vec<St
         target_function(conn, ts_codes, tx, code2name_map);
     }
     else {
-        tx.send(1);
+        tx.send(1).await.unwrap_or_default();
         tx.flush().await.ok();
         tx.close().await.ok();
     }

@@ -6,7 +6,6 @@ use async_std::task;
 use sqlx::pool::PoolConnection;
 use crate::results::{ HistoryDown, DBResult };
 use std::collections::HashMap;
-use chrono::Local;
 
 /// 坚实基础理论：低值，估价偏低，巴菲特宣传的思想对吧
 /// version: 0.1.0
@@ -92,13 +91,13 @@ pub async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
     match tx.send(1).await {
         Ok(_) => {
             println!("cal group finished");
-            tx.flush().await;
-            tx.close().await;
+            tx.flush().await.unwrap_or_default();
+            tx.close().await.unwrap_or_default();
         },
         Err(_) => {
             println!("cal success but send message failed!");
-            tx.flush().await;
-            tx.close().await;
+            tx.flush().await.unwrap_or_default();
+            tx.close().await.unwrap_or_default();
         }
     };
 }
