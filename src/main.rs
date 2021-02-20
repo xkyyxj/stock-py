@@ -21,11 +21,8 @@ use async_std::task;
 
 use crate::calculate::{calculate_history_down_s};
 use futures::channel::mpsc;
-
-
-
-
-
+use redis::ConnectionLike;
+use crate::cache::AsyncRedisOperation;
 
 
 struct A {
@@ -47,6 +44,16 @@ fn main() {
     map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
     map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
     initialize::init(map);
+
+    task::block_on(async {
+        let mut conn = AsyncRedisOperation::new().await;
+        let mut val = 1;
+        loop {
+            val += 1;
+            conn.set("123", val.to_string()).await;
+            sleep(Duration::from_secs(100));
+        }
+    });
 
     // 测试获取实时信息
     // let mut time_fetcher = TimeFetcher{ is_started: false };
