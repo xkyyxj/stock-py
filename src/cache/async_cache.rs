@@ -16,7 +16,7 @@ impl AsyncRedisOperation {
     }
 
     async fn check_connection(&mut self) {
-        if let Err(_) =  self.connection.exists(String::from("~")).await {
+        if let Err(_) =  self.connection.exists::<String, bool>(String::from("~")).await {
             self.reconnect().await;
         }
     }

@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sqlx = { version = "0.4.2", features = ["mysql", "runtime-async-std-native-tls"] }
+sqlx = { version = "0.5.1", features = ["mysql", "runtime-async-std-native-tls"] }
 async-std = { version = "1.9.0", features = ["attributes"] }
 paw = "1.0"
 futures = { version= "0.3" }

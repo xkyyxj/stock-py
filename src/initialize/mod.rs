@@ -28,11 +28,12 @@ pub fn init(cx: HashMap<String, String>) {
 
     // 初始化数据库连接池
     let mysql_init = async {
+        println!("mysql info is {}", mysql_info);
         let mut options = PoolOptions::<MySql>::new();
         options = options.max_connections(config::MYSQL_MAX_CONNECTION as u32);
         match options.connect(mysql_info.as_str()).await {
             Ok(val) => { MYSQL_POOL.set(val).unwrap(); },
-            Err(_) => {  },
+            Err(err) => { println!("err is {}", format!("{:?}", err)) },
         };
     };
     executor::block_on(mysql_init);
