@@ -4,6 +4,7 @@ use sqlx::mysql::{MySqlRow};
 use async_std::task;
 use crate::results::{StockBaseInfo, DBResult};
 use sqlx::pool::PoolConnection;
+use log::{error, info, warn};
 
 /// 通用查询逻辑
 pub fn common_query(sql: &str, mut f: impl FnMut(&Vec<MySqlRow>)) {
@@ -21,7 +22,7 @@ pub async fn async_common_query(sql: &str, mut f: impl FnMut(&Vec<MySqlRow>)) {
             f(&all_rows);
         }
         Err(err) => {
-            println!("err is {}", format!("{:?}", err));
+            error!("err is {}", format!("{:?}", err));
         }
     }
 }
@@ -33,7 +34,7 @@ pub async fn async_common_exe(sql: &str) -> bool {
     match sqlx::query(sql).execute(pool).await {
         Ok(_) => { true }
         Err(err) => {
-            println!("err is {}", format!("{:?}", err));
+            error!("err is {}", format!("{:?}", err));
             false
         }
     }
@@ -45,7 +46,7 @@ pub async fn insert(conn: &mut PoolConnection<MySql>, val: impl DBResult) -> boo
     match query.execute(conn).await {
         Ok(_) => true,
         Err(err) => {
-            println!("err is {}", format!("{:?}", err));
+            error!("err is {}", format!("{:?}", err));
             false
         },
     }

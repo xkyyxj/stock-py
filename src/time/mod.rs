@@ -5,7 +5,7 @@ use chrono::Duration;
 use crate::results::{TimeIndexInfo, TimeIndexBaseInfo, TimeIndexBatchInfo, DBResult};
 use std::str::FromStr;
 use crate::cache::AsyncRedisOperation;
-
+use log::{error, info, warn};
 
 pub(crate) static INDEX_SUFFIX: &str = "_index";
 
@@ -81,9 +81,9 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             let temp_duration = (down_begin_time - curr_time).to_std().unwrap();
             // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
             // del_cache(&stock_code, &mut redis_ope).await;
-            println!("after morning sleep time is {}", temp_duration.as_secs());
+            info!("after morning sleep time is {}", temp_duration.as_secs());
             sleep(temp_duration).await;
-            println!("sleep finished {}", curr_time);
+            info!("sleep finished {}", curr_time);
         }
 
         // 到了第二天，呵呵哒哒
@@ -94,7 +94,7 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             let mut temp_duration = (next_three_morning - curr_time).to_std().unwrap();
             sleep(temp_duration).await;
             del_cache(&stock_code, &mut redis_ope).await;
-            println!("delete redis cache time is {}", next_three_morning);
+            info!("delete redis cache time is {}", next_three_morning);
 
             let after_del_time = Local::now();
             let next_day_duration = Duration::hours(24);
@@ -103,16 +103,16 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             up_end_time = up_end_time.add(next_day_duration);
             down_begin_time = down_begin_time.add(next_day_duration);
             down_end_time = down_end_time.add(next_day_duration);
-            println!("delete redis cache finished time is {}", after_del_time);
+            info!("delete redis cache finished time is {}", after_del_time);
             sleep(temp_duration).await;
-            println!("next new day time is {}", after_del_time);
+            info!("next new day time is {}", after_del_time);
         }
     }
 }
 
 async fn del_cache(ts_codes: &Vec<String>, redis_ope: &mut AsyncRedisOperation) {
     for item in ts_codes {
-        println!("delete item {}", item);
+        info!("delete item {}", item);
         let redis_key = String::from(item) + INDEX_SUFFIX;
         redis_ope.delete(redis_key).await;
     }

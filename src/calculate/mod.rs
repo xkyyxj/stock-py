@@ -6,6 +6,7 @@ mod calculate_down_then_flow;
 mod calculate_quick_down;
 mod win_pct_calculate;
 mod calculate_steady;
+mod calcualte_ex_vol;
 
 pub use calculate_max_win::calculate_max_win;
 pub use calculate_history_down::{calculate_history_down, calculate_history_down_s};

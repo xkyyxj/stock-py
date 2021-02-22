@@ -3,6 +3,7 @@ use crate::config::wait_select_config::WaitSelectConfig;
 
 mod history_down_config;
 mod wait_select_config;
+mod vol_config;
 
 /// 数据库最大连接数
 pub(crate) static MYSQL_MAX_CONNECTION: usize = 100;

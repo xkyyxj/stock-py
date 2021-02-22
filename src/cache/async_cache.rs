@@ -1,7 +1,7 @@
 use redis::{AsyncCommands, ToRedisArgs, FromRedisValue, ConnectionLike};
 use redis::aio::Connection;
 use chrono::Local;
-
+use log::{error, info, warn};
 
 pub struct AsyncRedisOperation {
     connection: Connection,
@@ -18,20 +18,20 @@ impl AsyncRedisOperation {
 
     async fn check_connection(&mut self) {
         if let Err(err) =  self.connection.exists::<String, bool>(String::from("~")).await {
-            println!("check connection err: {}", err);
+            warn!("check connection err: {}", err);
             self.reconnect().await;
         }
     }
 
     pub async fn reconnect(&mut self) {
-        println!("reconnect time is {}", Local::now());
+        warn!("reconnect time is {}", Local::now());
         let client = crate::initialize::REDIS_POOL.get().unwrap();
         match client.get_async_connection().await {
             Ok(connection) => {
                 self.connection = connection;
             },
             Err(err) => {
-                println!("reconnect err!! {}， time is {}", err, Local::now());
+                warn!("reconnect err!! {}， time is {}", err, Local::now());
                 let redis_info = crate::initialize::CONFIG_INFO.get().unwrap().redis_info.as_str();
                 if let Ok(val) = redis::Client::open(redis_info) {
                     crate::initialize::REDIS_POOL.set(val).unwrap();

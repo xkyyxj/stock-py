@@ -2,6 +2,7 @@ mod ema_select;
 mod rst_process;
 mod final_select;
 mod history_down_select;
+mod vol_select;
 
 use chrono::{DateTime, Local};
 pub use final_select::AllSelectStrategy;

@@ -7,6 +7,7 @@ use crate::config;
 use std::collections::HashMap;
 use crate::config::Config;
 use crate::utils::Taskbar;
+use log::{error, info, warn};
 
 pub static MYSQL_POOL: OnceCell<Pool<MySql>> = OnceCell::new();
 
@@ -17,6 +18,10 @@ pub static CONFIG_INFO: OnceCell<Config> = OnceCell::new();
 pub static TASKBAR_TOOL: OnceCell<Taskbar> = OnceCell::new();
 
 pub fn init(cx: HashMap<String, String>) {
+    // 初始化日志组件
+    log4rs::init_file("./log.yaml", Default::default()).unwrap();
+    info!("Log initialized fished!");
+
     let mut final_rst = true;
 
     let mysql_info = cx.get("mysql").unwrap();
@@ -28,21 +33,22 @@ pub fn init(cx: HashMap<String, String>) {
 
     // 初始化数据库连接池
     let mysql_init = async {
-        println!("mysql info is {}", mysql_info);
         let mut options = PoolOptions::<MySql>::new();
         options = options.max_connections(config::MYSQL_MAX_CONNECTION as u32);
         match options.connect(mysql_info.as_str()).await {
             Ok(val) => { MYSQL_POOL.set(val).unwrap(); },
-            Err(err) => { println!("err is {}", format!("{:?}", err)) },
+            Err(err) => { error!("err is {}", format!("{:?}", err)) },
         };
     };
     executor::block_on(mysql_init);
+    info!("Mysql connection initialized fished!");
 
     // 初始化Redis连接池
     match redis::Client::open(redis_info.as_str()) {
         Ok(val) => { REDIS_POOL.set(val).unwrap(); },
         Err(_) => { final_rst = false; },
     };
+    info!("Redis connection initialized fished!");
 
     // 初始化windows任务栏（不管了）
     TASKBAR_TOOL.set(Taskbar::new()).unwrap();

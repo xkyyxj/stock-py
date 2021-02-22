@@ -12,6 +12,7 @@ mod utils;
 mod selector;
 mod simulate;
 
+use log::{error, info, warn};
 use std::collections::HashMap;
 use chrono::{Local, DateTime};
 use std::time::Duration;
@@ -41,25 +42,34 @@ impl B {
 }
 
 fn main() {
-    let mut map = HashMap::<String, String>::new();
-    map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
-    map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
-    initialize::init(map);
+    log4rs::init_file("log.yaml", Default::default()).unwrap();
 
-    task::block_on(async {
-        // let conn = crate::initialize::MYSQL_POOL.get().unwrap();
-        // sqlx::query("select * from stock_list where ts_code='000001.SZ'").fetch_all(conn).await;
-        let mut conn = AsyncRedisOperation::new().await;
-        let mut val = 1;
-        loop {
-            println!("1111111");
-            val += 1;
-            conn.set("123", val.to_string()).await;
-            // sleep(Duration::from_secs(2000));
-            sleep(Duration::from_secs(1000)).await;
-            println!("2222222");
-        }
-    });
+    loop {
+        std::thread::sleep(Duration::from_secs(1));
+        info!("booting up");
+    }
+    // let mut map = HashMap::<String, String>::new();
+    // map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
+    // map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
+    // initialize::init(map);
+    // info!("hehehehehe");
+    //
+    //
+    // task::block_on(async {
+    //     // let conn = crate::initialize::MYSQL_POOL.get().unwrap();
+    //     // sqlx::query("select * from stock_list where ts_code='000001.SZ'").fetch_all(conn).await;
+    //     let mut conn = AsyncRedisOperation::new().await;
+    //     let mut val = 1;
+    //     loop {
+    //         println!("1111111");
+    //         info!("hehehehehe");
+    //         val += 1;
+    //         conn.set("123", val.to_string()).await;
+    //         // sleep(Duration::from_secs(2000));
+    //         sleep(Duration::from_secs(3)).await;
+    //         println!("2222222");
+    //     }
+    // });
 
     // 测试获取实时信息
     // let mut time_fetcher = TimeFetcher{ is_started: false };
@@ -128,14 +138,14 @@ fn main() {
     //     rst_process.process(all_common_rst.get(0).unwrap(), &temp_curr_time).await;
     // });
 
-    task::block_on(async {
-        let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
-        let (tx, _rx) = mpsc::channel::<u32>(4000);
-        let ts_codes = vec![String::from("000429.SZ"), String::from("300800.SZ")];
-        let map = HashMap::<String, String>::new();
-        calculate_history_down_s(conn, ts_codes, tx, map).await;
-        // calculate_air_castle().await;
-    });
+    // task::block_on(async {
+    //     let conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
+    //     let (tx, _rx) = mpsc::channel::<u32>(4000);
+    //     let ts_codes = vec![String::from("000429.SZ"), String::from("300800.SZ")];
+    //     let map = HashMap::<String, String>::new();
+    //     calculate_history_down_s(conn, ts_codes, tx, map).await;
+    //     // calculate_air_castle().await;
+    // });
 
     // 文件读取以及解析验证
     // task::block_on(async {
@@ -145,10 +155,10 @@ fn main() {
     // 低值计算验证
     // task::block_on(calculate_history_down());
 
-    match DateTime::<Local>::from_str("2020-11-02T15:00:03 +08:00") {
-        Ok(_val) => println!("ok， val is {}", _val),
-        Err(err) => println!("err is {}", format!("{:?}", err)),
-    }
+    // match DateTime::<Local>::from_str("2020-11-02T15:00:03 +08:00") {
+    //     Ok(_val) => println!("ok， val is {}", _val),
+    //     Err(err) => println!("err is {}", format!("{:?}", err)),
+    // }
     // match DateTime::<Local>::from_str("2020-09-18 23:05:33.299294600 +08:00") {
     //     Ok(_val) => println!("ok， val is {}", _val),
     //     Err(err) => println!("err is {}", format!("{:?}", err)),
