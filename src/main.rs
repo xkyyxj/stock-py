@@ -15,7 +15,8 @@ mod simulate;
 use std::collections::HashMap;
 use chrono::{Local, DateTime};
 use std::time::Duration;
-use std::thread::sleep;
+// use std::thread::sleep;
+use async_std::task::sleep;
 use std::str::FromStr;
 use async_std::task;
 
@@ -41,21 +42,22 @@ impl B {
 
 fn main() {
     let mut map = HashMap::<String, String>::new();
-    map.insert(String::from("mysql"), String::from("mysql://root:123qwe@localhost:3306/stock"));
+    map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
     map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
     initialize::init(map);
 
-
-
     task::block_on(async {
-        let conn = crate::initialize::MYSQL_POOL.get().unwrap();
-        sqlx::query("select * from stock_list where ts_code='000001.SZ'").fetch_all(conn).await;
+        // let conn = crate::initialize::MYSQL_POOL.get().unwrap();
+        // sqlx::query("select * from stock_list where ts_code='000001.SZ'").fetch_all(conn).await;
         let mut conn = AsyncRedisOperation::new().await;
         let mut val = 1;
         loop {
+            println!("1111111");
             val += 1;
             conn.set("123", val.to_string()).await;
-            sleep(Duration::from_secs(100));
+            // sleep(Duration::from_secs(2000));
+            sleep(Duration::from_secs(1000)).await;
+            println!("2222222");
         }
     });
 

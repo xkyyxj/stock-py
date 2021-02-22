@@ -82,6 +82,7 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
             // del_cache(&stock_code, &mut redis_ope).await;
             sleep(temp_duration).await;
+            println!("sleep finished {}", curr_time);
         }
 
         // 到了第二天，呵呵哒哒
@@ -92,6 +93,7 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             let mut temp_duration = (next_three_morning - curr_time).to_std().unwrap();
             sleep(temp_duration).await;
             del_cache(&stock_code, &mut redis_ope).await;
+            println!("delete redis cache time is {}", next_three_morning);
 
             let after_del_time = Local::now();
             let next_day_duration = Duration::hours(24);
@@ -100,7 +102,9 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             up_end_time = up_end_time.add(next_day_duration);
             down_begin_time = down_begin_time.add(next_day_duration);
             down_end_time = down_end_time.add(next_day_duration);
+            println!("delete redis cache finished time is {}", after_del_time);
             sleep(temp_duration).await;
+            println!("next new day time is {}", after_del_time);
         }
     }
 }

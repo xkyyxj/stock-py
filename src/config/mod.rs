@@ -51,6 +51,9 @@ pub struct Config {
     
     pub history_down_config: HistoryDownConfig,
     pub wait_select_config: WaitSelectConfig,
+
+    pub redis_info: String,
+    pub mysql_info: String,
 }
 
 impl Config {
@@ -61,6 +64,9 @@ impl Config {
             max_win_cal_period: MAX_WIN_CAL_PERIOD,
             index_info_fetch_delta: INDEX_INFO_FETCH_DELTA,
             analyze_time_delta: ANALYZE_TIME_DELTA,
+            // 数据库相关配置项
+            redis_info: "".to_string(),
+            mysql_info: "".to_string(),
 
             // 空中楼阁配置项
             air_castle_up_pct: AIR_CASTLE_UP_PCT,
