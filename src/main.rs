@@ -14,8 +14,7 @@ mod simulate;
 
 use log::{error, info, warn};
 use std::collections::HashMap;
-use chrono::{Local, DateTime};
-use std::time::Duration;
+use chrono::{Local, DateTime, Duration};
 // use std::thread::sleep;
 use async_std::task::sleep;
 use std::str::FromStr;
@@ -25,6 +24,7 @@ use crate::calculate::{calculate_history_down_s};
 use futures::channel::mpsc;
 use redis::ConnectionLike;
 use crate::cache::AsyncRedisOperation;
+use crate::utils::time_utils::{small_step_sleep, my_sleep};
 
 
 struct A {
@@ -42,12 +42,44 @@ impl B {
 }
 
 fn main() {
-    log4rs::init_file("log.yaml", Default::default()).unwrap();
+    // log4rs::init_file("log.yaml", Default::default()).unwrap();
+    // initialize();
+    // let handler = task::spawn(async {
+    //     let duration = Duration::seconds(10000);
+    //     small_step_sleep(&duration).await;
+    // });
+    // task::block_on(handler);
 
+    let mut map = HashMap::<String, String>::new();
+    map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
+    map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
+    initialize::init(map);
+    let mut vec = vec![1, 2, 3];
     loop {
-        std::thread::sleep(Duration::from_secs(1));
-        info!("booting up");
+        if vec.len() <= 0 {
+            break;
+        }
+        println!("{}", vec[0]);
+        vec.remove(0);
     }
+    println!("len is {}", vec.len());
+
+    task::block_on(async {
+        loop {
+            my_sleep(Duration::seconds(7200)).await;
+            error!("sleep finished!!")
+        }
+    });
+
+    // loop {
+    //     // std::thread::sleep(Duration::from_secs(1));
+    //     // info!("booting up");
+    //     task::spawn(async {
+    //         let duration = Duration::seconds(10000);
+    //         small_step_sleep(&duration).await;
+    //     });
+    //
+    // }
     // let mut map = HashMap::<String, String>::new();
     // map.insert(String::from("mysql"), String::from("mysql://root:123@localhost:3306/stock"));
     // map.insert(String::from("redis"), String::from("redis://127.0.0.1/"));
@@ -170,7 +202,17 @@ fn main() {
     //     join_handler.await;
     //     // /join_handler2.await;
     // });
-    sleep(Duration::from_secs(100000));
+    // sleep(Duration::from_secs(100000));
 
 }
+
+// #[tokio::main]
+// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//     log4rs::init_file("./log.yaml", Default::default()).unwrap();
+//     tokio::spawn(async move {
+//         error!("start");
+//         tokio::time::sleep(Duration::from_secs(7200));
+//         error!("end");
+//     });
+// }
 

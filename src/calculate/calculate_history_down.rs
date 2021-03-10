@@ -55,7 +55,7 @@ pub async fn calculate_history_down_s(mut conn: PoolConnection<MySql>,
         for i in 1..all_close.len() {
             let temp_close = all_close.get(i).unwrap();
             delta_pct = (*last_day_close - *temp_close) / *temp_close;
-            if delta_pct < min_up_pct {
+            if delta_pct <= min_up_pct {
                 delta_days = delta_days + 1;
                 if *temp_close < his_down_price {
                     his_down_price = *temp_close;

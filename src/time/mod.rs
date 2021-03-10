@@ -1,11 +1,14 @@
+mod time_check;
+
 use chrono::prelude::*;
 use std::ops::Add;
-use async_std::task::sleep;
 use chrono::Duration;
 use crate::results::{TimeIndexInfo, TimeIndexBaseInfo, TimeIndexBatchInfo, DBResult};
 use std::str::FromStr;
 use crate::cache::AsyncRedisOperation;
 use log::{error, info, warn};
+use async_std::task::sleep;
+use crate::utils::time_utils::{small_step_sleep, my_sleep};
 
 pub(crate) static INDEX_SUFFIX: &str = "_index";
 
@@ -71,19 +74,23 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
 
         // 早上未开盘之前，休眠
         if curr_time < up_begin_time {
-            let temp_duration = (up_begin_time - curr_time).to_std().unwrap();
+            let temp_duration = up_begin_time - curr_time;
             del_cache(&stock_code, &mut redis_ope).await;
-            sleep(temp_duration).await;
+            // sleep(temp_duration).await;
+            my_sleep(temp_duration).await;
+            // small_step_sleep(&temp_duration).await;
         }
 
         // 上午到下午之间的间歇，休眠
         if curr_time > up_end_time && curr_time <= down_begin_time {
-            let temp_duration = (down_begin_time - curr_time).to_std().unwrap();
+            let temp_duration = down_begin_time - curr_time;
             // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
             // del_cache(&stock_code, &mut redis_ope).await;
-            info!("after morning sleep time is {}", temp_duration.as_secs());
-            sleep(temp_duration).await;
-            info!("sleep finished {}", curr_time);
+            warn!("after morning sleep time is {}", temp_duration.to_std().unwrap().as_secs());
+            // sleep(temp_duration).await;
+            my_sleep(temp_duration).await;
+            // small_step_sleep(&temp_duration).await;
+            warn!("sleep finished {}", curr_time);
         }
 
         // 到了第二天，呵呵哒哒
@@ -91,28 +98,32 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             // 午夜三点左右，删除前一天的redis缓存吧
             let del_redis_duration = Duration::hours(12);
             let next_three_morning = down_end_time + del_redis_duration;
-            let mut temp_duration = (next_three_morning - curr_time).to_std().unwrap();
-            sleep(temp_duration).await;
+            let mut temp_duration = next_three_morning - curr_time;
+            // sleep(temp_duration).await;
+            my_sleep(temp_duration).await;
+            // small_step_sleep(&temp_duration).await;
             del_cache(&stock_code, &mut redis_ope).await;
-            info!("delete redis cache time is {}", next_three_morning);
+            warn!("delete redis cache time is {}", next_three_morning);
 
             let after_del_time = Local::now();
             let next_day_duration = Duration::hours(24);
             up_begin_time = up_begin_time.add(next_day_duration);
-            temp_duration = (up_begin_time - after_del_time).to_std().unwrap();
+            temp_duration = up_begin_time - after_del_time;
             up_end_time = up_end_time.add(next_day_duration);
             down_begin_time = down_begin_time.add(next_day_duration);
             down_end_time = down_end_time.add(next_day_duration);
-            info!("delete redis cache finished time is {}", after_del_time);
-            sleep(temp_duration).await;
-            info!("next new day time is {}", after_del_time);
+            warn!("delete redis cache finished time is {}", after_del_time);
+            // sleep(temp_duration).await;
+            my_sleep(temp_duration).await;
+            // small_step_sleep(&temp_duration).await;
+            warn!("next new day time is {}", after_del_time);
         }
     }
 }
 
 async fn del_cache(ts_codes: &Vec<String>, redis_ope: &mut AsyncRedisOperation) {
     for item in ts_codes {
-        info!("delete item {}", item);
+        warn!("delete item {}", item);
         let redis_key = String::from(item) + INDEX_SUFFIX;
         redis_ope.delete(redis_key).await;
     }

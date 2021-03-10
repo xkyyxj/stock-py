@@ -9,40 +9,40 @@ use std::str::FromStr;
 use std::ops::Add;
 
 pub struct TimeIndexBaseInfo {
-    pub(crate) t_open: f64,                         // 今日开盘价
-    pub(crate) y_close: f64,                        // 昨日收盘价
-    pub(crate) curr_price: f64,                     // 当前价格
-    pub(crate) t_max: f64,                          // 今日最高价
-    pub(crate) t_min: f64,                          // 今日最低价
-    pub(crate) buy_price: [f64; 5],                 // 一到五的买方价格，0为买一，以此类推
-    pub(crate) sold_price: [f64; 5],                // 一到五的卖方价格，0为卖一，以此类推
-    pub(crate) buy_num: [u64; 5],                   // 一到五的买方数量，0为买一数量，以此类推
-    pub(crate) sold_num: [u64; 5],                  // 一到五的卖方数量，0为卖一数量，以此类推
-    pub(crate) curr_time: DateTime<Local>           // 当前时间
+    pub t_open: f64,                         // 今日开盘价
+    pub y_close: f64,                        // 昨日收盘价
+    pub curr_price: f64,                     // 当前价格
+    pub t_max: f64,                          // 今日最高价
+    pub t_min: f64,                          // 今日最低价
+    pub buy_price: [f64; 5],                 // 一到五的买方价格，0为买一，以此类推
+    pub sold_price: [f64; 5],                // 一到五的卖方价格，0为卖一，以此类推
+    pub buy_num: [u64; 5],                   // 一到五的买方数量，0为买一数量，以此类推
+    pub sold_num: [u64; 5],                  // 一到五的卖方数量，0为卖一数量，以此类推
+    pub curr_time: DateTime<Local>           // 当前时间
 }
 
 pub struct TimeIndexBatchInfo {
-    pub(crate) ts_code: String,                     // 股票名称
-    pub(crate) ts_name: String,                     // 股票编码
-    pub(crate) base_infos: Vec<TimeIndexBaseInfo>   // 基本信息合集
+    pub ts_code: String,                     // 股票名称
+    pub ts_name: String,                     // 股票编码
+    pub base_infos: Vec<TimeIndexBaseInfo>   // 基本信息合集
 }
 
 /// 单条分时数据
 pub struct TimeIndexInfo {
-    pub(crate) ts_code: String,                     // 股票名称
-    pub(crate) ts_name: String,                     // 股票编码
-    pub(crate) t_open: f64,                         // 今日开盘价
-    pub(crate) y_close: f64,                        // 昨日收盘价
-    pub(crate) curr_price: f64,                     // 当前价格
-    pub(crate) t_max: f64,                          // 今日最高价
-    pub(crate) t_min: f64,                          // 今日最低价
-    pub(crate) deal_num: u64,                       // 成交数量
-    pub(crate) deal_mny: f64,                       // 成交金额
-    pub(crate) buy_price: [f64; 5],                 // 一到五的买方价格，0为买一，以此类推
-    pub(crate) sold_price: [f64; 5],                // 一到五的卖方价格，0为卖一，以此类推
-    pub(crate) buy_num: [u64; 5],                   // 一到五的买方数量，0为买一数量，以此类推
-    pub(crate) sold_num: [u64; 5],                  // 一到五的卖方数量，0为卖一数量，以此类推
-    pub(crate) curr_time: DateTime<Local>           // 当前时间
+    pub ts_code: String,                     // 股票名称
+    pub ts_name: String,                     // 股票编码
+    pub t_open: f64,                         // 今日开盘价
+    pub y_close: f64,                        // 昨日收盘价
+    pub curr_price: f64,                     // 当前价格
+    pub t_max: f64,                          // 今日最高价
+    pub t_min: f64,                          // 今日最低价
+    pub deal_num: u64,                       // 成交数量
+    pub deal_mny: f64,                       // 成交金额
+    pub buy_price: [f64; 5],                 // 一到五的买方价格，0为买一，以此类推
+    pub sold_price: [f64; 5],                // 一到五的卖方价格，0为卖一，以此类推
+    pub buy_num: [u64; 5],                   // 一到五的买方数量，0为买一数量，以此类推
+    pub sold_num: [u64; 5],                  // 一到五的卖方数量，0为卖一数量，以此类推
+    pub curr_time: DateTime<Local>           // 当前时间
 }
 
 impl DBResult for TimeIndexInfo {
@@ -215,7 +215,7 @@ impl Display for TimeIndexBatchInfo {
 }
 
 impl TimeIndexBatchInfo {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         TimeIndexBatchInfo {
             ts_code: "".to_string(),
             ts_name: "".to_string(),
@@ -223,7 +223,7 @@ impl TimeIndexBatchInfo {
         }
     }
 
-    pub(crate) fn add_single_info(&mut self, _single_info: &TimeIndexInfo) {
+    pub fn add_single_info(&mut self, _single_info: &TimeIndexInfo) {
         if self.base_infos.is_empty() && self.ts_code.is_empty() {
             self.ts_code = String::from(&_single_info.ts_code);
             self.ts_name = String::from(&_single_info.ts_name);
@@ -231,7 +231,7 @@ impl TimeIndexBatchInfo {
         self.base_infos.push(_single_info.into());
     }
 
-    pub(crate) fn get_last_info(&self) -> Option<&TimeIndexBaseInfo> {
+    pub fn get_last_info(&self) -> Option<&TimeIndexBaseInfo> {
         if self.base_infos.is_empty() {
             return None
         }
@@ -240,7 +240,7 @@ impl TimeIndexBatchInfo {
 }
 
 impl TimeIndexInfo {
-    pub(crate) fn get_base_info(&self) -> TimeIndexBaseInfo {
+    pub fn get_base_info(&self) -> TimeIndexBaseInfo {
         TimeIndexBaseInfo {
             t_open: self.t_open,
             y_close: self.y_close,

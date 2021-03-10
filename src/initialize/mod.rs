@@ -8,6 +8,9 @@ use std::collections::HashMap;
 use crate::config::Config;
 use crate::utils::Taskbar;
 use log::{error, info, warn};
+use crate::utils::time_utils::TimeCheck;
+use async_std::sync::{Mutex, Arc};
+use std::thread;
 
 pub static MYSQL_POOL: OnceCell<Pool<MySql>> = OnceCell::new();
 
@@ -17,10 +20,12 @@ pub static CONFIG_INFO: OnceCell<Config> = OnceCell::new();
 
 pub static TASKBAR_TOOL: OnceCell<Taskbar> = OnceCell::new();
 
+pub static TIME_CHECK: OnceCell<Arc<TimeCheck>> = OnceCell::new();
+
 pub fn init(cx: HashMap<String, String>) {
     // 初始化日志组件
     log4rs::init_file("./log.yaml", Default::default()).unwrap();
-    info!("Log initialized fished!");
+    warn!("Log initialized fished!");
 
     let mut final_rst = true;
 
@@ -41,15 +46,20 @@ pub fn init(cx: HashMap<String, String>) {
         };
     };
     executor::block_on(mysql_init);
-    info!("Mysql connection initialized fished!");
+    warn!("Mysql connection initialized fished!");
 
     // 初始化Redis连接池
     match redis::Client::open(redis_info.as_str()) {
         Ok(val) => { REDIS_POOL.set(val).unwrap(); },
         Err(_) => { final_rst = false; },
     };
-    info!("Redis connection initialized fished!");
+    warn!("Redis connection initialized fished!");
 
     // 初始化windows任务栏（不管了）
     TASKBAR_TOOL.set(Taskbar::new()).unwrap();
+
+    let time_check = Arc::new(TimeCheck::new());
+    let time_check2 = time_check.clone();
+    thread::spawn(move || {time_check.start();});
+    TIME_CHECK.set(time_check2);
 }

@@ -153,7 +153,7 @@ fn judge_is_up(redis_info: &Vec::<TimeIndexBaseInfo>) -> bool {
     let pre_price = redis_info.get(0).unwrap().curr_price;
     for item in redis_info {
         let curr_price = item.curr_price;
-        if curr_price > pre_price {
+        if curr_price < pre_price {
             return false;
         }
     }

@@ -36,7 +36,7 @@ appenders:
         base: 0
         count: 100
 root:
-  level: trace
+  level: error
   appenders:
     - stdout
     - requests
