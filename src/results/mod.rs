@@ -9,12 +9,12 @@ mod time_index_info;
 mod wait_select;
 mod box_style;
 mod air_castle;
-mod hold_info;
+mod ope_info;
 mod ema_value;
 
 pub use result::{ StockBaseInfo, InLow };
 pub use time_index_info::{ TimeIndexInfo, TimeIndexBaseInfo, TimeIndexBatchInfo };
-pub use hold_info::HoldInfo;
+pub use ope_info::{OpeInfo, WaitSold};
 pub use history_down::HistoryDown;
 pub use box_style::BoxStyle;
 pub use wait_select::WaitSelect;

@@ -2,6 +2,7 @@ mod time_fetcher;
 mod common_calculate;
 mod analyzer;
 mod common_select;
+mod track_sold;
 
 pub use time_fetcher::TimeFetcher;
 pub use analyzer::HistoryDownAna;

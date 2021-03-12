@@ -10,7 +10,7 @@ use chrono::Local;
 use async_std::task::{self, sleep};
 use futures::channel::mpsc;
 use chrono::Duration;
-
+use log::{error, info, warn, trace};
 
 
 // async_std的MutexGuard是实现了Send的，标准库的MutexGuard则没有（因为task对象可能在不同的线程上切换然后执行）
@@ -72,6 +72,7 @@ impl AllSelectStrategy {
         let ana_delta_time = config.analyze_time_delta;
         let taskbar = crate::initialize::TASKBAR_TOOL.get().unwrap();
         loop {
+            warn!("Selector loop!");
             let curr_time = Local::now();
             self.time_check.check_sleep(&curr_time).await;
             let (tx, rx) = mpsc::unbounded::<CommonSelectRst>();
@@ -155,7 +156,7 @@ async fn parse_selectors(selectors: String) -> Vec<String> {
         if str.len() == 0 {
             continue;
         }
-        println!("infos is {}", str);
+        trace!("infos is {}", str);
         all_selectors.push(str);
     }
     all_selectors

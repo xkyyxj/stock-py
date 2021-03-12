@@ -42,7 +42,7 @@ pub struct Config {
     pub(crate) mysql_max_connection: usize,
     pub(crate) max_win_cal_period: usize,
     pub(crate) index_info_fetch_delta: i64,
-    pub(crate) analyze_time_delta: i64,
+    pub analyze_time_delta: i64,
     pub(crate) air_castle_up_pct: f64,
     pub(crate) air_castle_up_days: i64,
     pub(crate) ema_select_length: i64,

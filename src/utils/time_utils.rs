@@ -109,7 +109,7 @@ pub fn curr_date() -> DateTime<Local> {
     Local::now()
 }
 
-/// 通用模式："%Y%m%d"，备忘一下
+/// 通用模式："%Y%m%d"，备忘一下，全的：%Y-%m-%d %H:%M:%S
 pub fn curr_date_str(format: &str) -> String {
     let date_time = Local::now();
     date_time.format(format).to_string()
@@ -234,6 +234,7 @@ impl TimeCheck {
             }
             drop(map_guard);
             thread::sleep(time::Duration::from_secs(2));
+            thread::park_timeout();
         }
     }
 }
