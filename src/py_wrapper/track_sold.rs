@@ -11,7 +11,7 @@ pub struct TrackSoldStrategy {
 impl TrackSoldStrategy {
     #[new]
     pub(crate) fn new() -> Self {
-        TrackSold {
+        TrackSoldStrategy {
             is_started: false
         }
     }
@@ -22,9 +22,9 @@ impl TrackSoldStrategy {
             return
         }
         task::spawn(async {
-            let mut select = TrackSold::new().await;
-            select.initialize().await;
-            select.select().await;
+            let mut sold = TrackSold::new();
+            sold.initialize().await;
+            sold.sold().await;
         });
         self.is_started = true;
     }

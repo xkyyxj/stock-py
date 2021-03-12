@@ -11,6 +11,7 @@ mod py_wrapper;
 mod utils;
 mod selector;
 mod simulate;
+mod sold;
 
 use log::{error, info, warn};
 use std::collections::HashMap;

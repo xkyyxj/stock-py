@@ -233,8 +233,7 @@ impl TimeCheck {
                 }
             }
             drop(map_guard);
-            thread::sleep(time::Duration::from_secs(2));
-            thread::park_timeout();
+            thread::sleep(time::Duration::from_micros(100));
         }
     }
 }

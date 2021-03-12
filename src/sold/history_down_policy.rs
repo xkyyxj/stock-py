@@ -61,7 +61,7 @@ pub async fn history_down_judge(mut hold_info: &OpeInfo) -> SoldInfo {
     // 此处做个小判定，如果是当前股价正在上涨的话，那么我们就持续持有一小段时间
     let real_info = redis_info.unwrap();
     let mut latest_close = 0f64;
-    for item in real_info {
+    for item in &real_info {
         need_sold &= item.curr_price < latest_close;
         latest_close = item.curr_price;
     }

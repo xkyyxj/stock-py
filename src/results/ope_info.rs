@@ -3,6 +3,8 @@ use sqlx::query::Query;
 use sqlx::{MySql, Row};
 use sqlx::mysql::{MySqlArguments, MySqlRow};
 use crate::sql;
+use std::borrow::Borrow;
+use std::ops::Deref;
 
 pub struct OpeInfo {
     pub pk_ope: i64,
@@ -54,13 +56,16 @@ impl DBResult for OpeInfo {
     }
 
     fn insert(&self) -> Query<'_, MySql, MySqlArguments> {
-        let mut insert_sql = "insert into ";
+        let mut insert_sql = "";
         if self.simulate {
-            insert_sql += "operate_info_simulate ";
+            insert_sql = "insert into operate_info_simulate (ts_code, trade_date, \
+            ope_num, ope_close, ope_flag, win_mny, win_pct, select_type, pk_buy_ope, buy_left_num) \
+            values(?,?,?,?,?,?,?,?,?,?)";
+        } else {
+            insert_sql = "insert into operate_info (ts_code, trade_date, \
+            ope_num, ope_close, ope_flag, win_mny, win_pct, select_type, pk_buy_ope, buy_left_num) \
+            values(?,?,?,?,?,?,?,?,?,?)";
         }
-        insert_sql += "(ts_code, trade_date, \
-        ope_num, ope_close, ope_flag, win_mny, win_pct, select_type, pk_buy_ope, buy_left_num)";
-        insert_sql += " values(?,?,?,?,?,?,?,?,?,?)";
         sqlx::query(insert_sql)
     }
 

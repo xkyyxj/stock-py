@@ -1,5 +1,5 @@
 use crate::sql;
-use crate::results::{OpeInfo, WaitSold};
+use crate::results::{OpeInfo, WaitSold, DBResult};
 use crate::utils::time_utils::curr_date_str;
 use crate::cache::{ AsyncRedisOperation, get_last_index_info_from_redis };
 use sqlx::{Row, MySql};
@@ -57,7 +57,7 @@ impl TrackSold {
                         select_type: item.get("select_type"),
                         pk_buy_ope: item.get::<'_, i64, &str>("pk_buy_ope"),
                         buy_left_num: item.get::<'_, i64, &str>("buy_left_num"),
-                        simulate: false
+                        simulate: count == 0
                     };
                     if count == 0 {
                         self.real_hold.push(temp_info);
@@ -77,13 +77,17 @@ impl TrackSold {
         loop {
             warn!("Track Sold loop!");
             let curr_time = Local::now();
+            if self.time_check.check_curr_night_rest(&curr_time) {
+                // 如果是晚上的话，重新刷新一下OpeInfo数据，今天刚刚加进来的明天就可以卖出了
+                self.refresh_data().await;
+            }
             self.time_check.check_sleep(&curr_time).await;
             let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
-            for item in &mut self.real_hold {
+            for item in &self.real_hold {
                 self.sold_item(item, false, &mut conn).await;
             }
 
-            for item in &mut self.simulate_hold {
+            for item in &self.simulate_hold {
                 self.sold_item(item, true, &mut conn).await;
             }
 
@@ -106,7 +110,14 @@ impl TrackSold {
                 select_type = "Down".to_string();
                 history_down_judge(buy_info).await
             },
-            _ => {}
+            _ => {
+                SoldInfo {
+                    pk_buy_ope: 0,
+                    ope_pct: 0.0,
+                    can_sold: false,
+                    sold_price: 0.0
+                }
+            }
         };
 
         if !judge_rst.can_sold {
@@ -122,7 +133,7 @@ impl TrackSold {
         let real_info = last_info.unwrap();
         // 计算相关的比例
         let win_pct = (real_info.curr_price - buy_info.ope_close) / buy_info.ope_close;
-        let win_mny = (real_info.curr_price - buy_info.ope_close) * buy_info.ope_num;
+        let win_mny = (real_info.curr_price - buy_info.ope_close) * buy_info.ope_num as f64;
         // 开始做卖出操作（FIXME -- 此处似乎完全没有考虑事务的问题？？？？）
         if is_simulate {
             let ope_info = OpeInfo {
@@ -142,9 +153,10 @@ impl TrackSold {
             sql::insert(conn, ope_info).await;
 
             // 更正买入记录（TODO -- 此处当作是全部卖出了，部分卖出以后再说）
-            let mut sql_str = "update operate_info_simulate set buy_left_num=0 where pk_ope='";
-            sql_str += buy_info.pk_ope + "'";
-            sql::async_common_exe(sql_str).await;
+            let mut sql_str = String::from("update operate_info_simulate set buy_left_num=0 where pk_ope='");
+            sql_str += buy_info.pk_ope.to_string().as_str();
+            sql_str += "'";
+            sql::async_common_exe(sql_str.as_str()).await;
         } else {
             // 给出提示信息，插入到wait_sold这张表格当中
             let mut wait_sold = WaitSold::new();
