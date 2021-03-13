@@ -21,7 +21,7 @@ pub struct OpeInfo {
     pub simulate: bool,
 }
 
-pub fn process_single_row_for_ope_info(row: &MySqlRow) -> OpeInfo {
+pub fn process_single_row_for_ope_info(row: &MySqlRow, is_simulate: bool) -> OpeInfo {
     let mut temp_rst = OpeInfo::new();
     temp_rst.pk_ope = row.get("pk_ope");
     temp_rst.ts_code = row.get("ts_code");
@@ -34,6 +34,7 @@ pub fn process_single_row_for_ope_info(row: &MySqlRow) -> OpeInfo {
     temp_rst.select_type = row.get("select_type");
     temp_rst.pk_buy_ope = row.get::<'_, i64, &str>("pk_buy_ope");
     temp_rst.buy_left_num = row.get::<'_, i64, &str>("buy_left_num");
+    temp_rst.simulate = is_simulate;
     temp_rst
 }
 
@@ -58,13 +59,13 @@ impl DBResult for OpeInfo {
     fn insert(&self) -> Query<'_, MySql, MySqlArguments> {
         let mut insert_sql = "";
         if self.simulate {
-            insert_sql = "insert into operate_info_simulate (ts_code, trade_date, \
+            insert_sql = "insert into operate_info_simulate (ts_code, trade_date, simulate, \
             ope_num, ope_close, ope_flag, win_mny, win_pct, select_type, pk_buy_ope, buy_left_num) \
-            values(?,?,?,?,?,?,?,?,?,?)";
+            values(?,?,?,?,?,?,?,?,?,?,?)";
         } else {
-            insert_sql = "insert into operate_info (ts_code, trade_date, \
+            insert_sql = "insert into operate_info (ts_code, trade_date, simulate, \
             ope_num, ope_close, ope_flag, win_mny, win_pct, select_type, pk_buy_ope, buy_left_num) \
-            values(?,?,?,?,?,?,?,?,?,?)";
+            values(?,?,?,?,?,?,?,?,?,?,?)";
         }
         sqlx::query(insert_sql)
     }
@@ -72,6 +73,11 @@ impl DBResult for OpeInfo {
     fn bind<'a>(&'a self, mut query: Query<'a, MySql, MySqlArguments>) -> Query<'a, MySql, MySqlArguments> {
         query = query.bind(&self.ts_code);
         query = query.bind(&self.trade_date);
+        if self.simulate {
+            query = query.bind("Y");
+        } else {
+            query = query.bind("N");
+        }
         query = query.bind(self.ope_num);
         query = query.bind(self.ope_close);
         query = query.bind(&self.ope_flag);
@@ -89,7 +95,22 @@ impl DBResult for OpeInfo {
         let mut final_rst = Vec::<Box<OpeInfo>>::new();
         sql::common_query(final_sql.as_ref(), |rows| {
             for row in rows {
-                final_rst.push(Box::<Self>::new(process_single_row_for_ope_info(row)));
+                final_rst.push(Box::<Self>::new(process_single_row_for_ope_info(row, false)));
+            }
+        });
+        final_rst
+    }
+}
+
+impl OpeInfo {
+    pub fn query_simulate(where_part: Option<String>) -> Vec<Box<Self>> {
+        let mut final_sql = String::from("select * from ope_info_simulate ");
+        final_sql = super::process_where_part(final_sql, where_part);
+
+        let mut final_rst = Vec::<Box<OpeInfo>>::new();
+        sql::common_query(final_sql.as_ref(), |rows| {
+            for row in rows {
+                final_rst.push(Box::<Self>::new(process_single_row_for_ope_info(row, true)));
             }
         });
         final_rst

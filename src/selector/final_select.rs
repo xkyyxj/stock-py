@@ -16,6 +16,7 @@ use log::{error, info, warn, trace};
 // async_std的MutexGuard是实现了Send的，标准库的MutexGuard则没有（因为task对象可能在不同的线程上切换然后执行）
 // 否则的话你说两个future如何并行执行？？？？？？？？？？？？？（按照现在这写法）
 use async_std::sync::{Mutex, Arc};
+use crate::simulate::BuyInfoInsert;
 
 
 pub struct AllSelectStrategy {
@@ -28,6 +29,8 @@ pub struct AllSelectStrategy {
     // 各种选择策略：
     ema_select: Arc<Mutex<EMASelect>>,
     history_down: Arc<Mutex<HistoryDownSelect>>,
+
+    insert_simulate: BuyInfoInsert,
 }
 
 impl AllSelectStrategy {
@@ -39,6 +42,7 @@ impl AllSelectStrategy {
             time_check: SleepDuringStop::new(),
             ema_select: Arc::new(Mutex::new(EMASelect::new().await)),
             history_down: Arc::new(Mutex::new(HistoryDownSelect::new().await)),
+            insert_simulate: BuyInfoInsert::new(),
         }
     }
 
@@ -60,6 +64,8 @@ impl AllSelectStrategy {
             let real_history_down = &mut *self.history_down.lock().await;
             real_history_down.initialize().await;
         }
+
+        self.insert_simulate.initialize();
     }
 
     fn contain_selector(&mut self, name: &String) -> bool {
@@ -74,7 +80,21 @@ impl AllSelectStrategy {
         loop {
             warn!("Selector loop!");
             let curr_time = Local::now();
-            self.time_check.check_sleep(&curr_time).await;
+            match self.time_check.check_sleep(&curr_time).await {
+                crate::utils::time_utils::MIDNIGHT_SLEEP => {
+                    // 如果是晚上的话，刷新一下买入信息
+                    self.insert_simulate.refresh();
+                    (*self.history_down.lock().await).refresh().await;
+                    (*self.ema_select.lock().await).refresh().await;
+                },
+                crate::utils::time_utils::BEFORE_MORNING_SLEEP => {
+                    // 早上之前同样需要刷新一下数据
+                    self.insert_simulate.refresh();
+                    (*self.history_down.lock().await).refresh().await;
+                    (*self.ema_select.lock().await).refresh().await;
+                },
+                _ => {}
+            }
             let (tx, rx) = mpsc::unbounded::<CommonSelectRst>();
             // 如果添加了新的选择策略，别忘了在这儿添加，现在只能是这样了…………，动态扩展？？？？？？？呵呵哒哒
             let history_down_clone = self.history_down.clone();

@@ -11,6 +11,11 @@ use std::{thread, time};
 use async_std::task;
 use log::{error, info, warn};
 
+pub const NOT_SLEEP: i64 = 0;
+pub const MIDDAY_SLEEP: i64 = 1;
+pub const BEFORE_MORNING_SLEEP: i64 = 2;
+pub const MIDNIGHT_SLEEP: i64 = 3;
+
 pub struct SleepDuringStop {
     // 当前天上午开盘时间(上午9:29:59)
     _up_begin_time: DateTime<Local>,
@@ -40,11 +45,11 @@ impl SleepDuringStop {
         }
     }
 
-    pub async fn check_sleep(&mut self, curr_time: &DateTime<Local>) {
+    pub async fn check_sleep(&mut self, curr_time: &DateTime<Local>) -> i64 {
         // let curr_time: DateTime<Local> = Local::now();
         if (curr_time >= &self._up_begin_time && curr_time <= &self._up_end_time) ||
             (curr_time >= &self._down_begin_time && curr_time <= &self._down_end_time) {
-            return;
+            return NOT_SLEEP;
         }
         else {
             // 早上未开盘之前，休眠
@@ -53,6 +58,7 @@ impl SleepDuringStop {
                 // sleep(temp_duration).await;
                 my_sleep(temp_duration).await;
                 // small_step_sleep(&temp_duration).await;
+                return BEFORE_MORNING_SLEEP;
             }
 
             // 午休休盘时间，睡眠
@@ -61,6 +67,7 @@ impl SleepDuringStop {
                 // sleep(temp_duration).await;
                 my_sleep(temp_duration).await;
                 // small_step_sleep(&temp_duration).await;
+                return MIDDAY_SLEEP;
             }
 
             // 到了第二天，重新计时吧
@@ -74,7 +81,9 @@ impl SleepDuringStop {
                 // sleep(temp_duration).await;
                 my_sleep(temp_duration).await;
                 // small_step_sleep(&temp_duration).await;
+                return MIDDAY_SLEEP;
             }
+            return NOT_SLEEP;
         }
     }
 

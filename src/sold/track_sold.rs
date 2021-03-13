@@ -12,7 +12,7 @@ use async_std::task::{self, sleep};
 use chrono::Duration;
 use crate::sold::SoldInfo;
 
-pub static HISTORY_DOWN_TYPE: &str = "down";
+pub const HISTORY_DOWN_TYPE: &str = "down";
 
 pub struct TrackSold {
     pub real_hold: Vec<OpeInfo>,
@@ -77,11 +77,17 @@ impl TrackSold {
         loop {
             warn!("Track Sold loop!");
             let curr_time = Local::now();
-            if self.time_check.check_curr_night_rest(&curr_time) {
-                // 如果是晚上的话，重新刷新一下OpeInfo数据，今天刚刚加进来的明天就可以卖出了
-                self.refresh_data().await;
+            match self.time_check.check_sleep(&curr_time).await {
+                crate::utils::time_utils::MIDNIGHT_SLEEP => {
+                    // 如果是晚上的话，重新刷新一下OpeInfo数据，今天刚刚加进来的明天就可以卖出了
+                    self.refresh_data().await;
+                },
+                crate::utils::time_utils::BEFORE_MORNING_SLEEP => {
+                    // 早上之前同样需要刷新一下数据
+                    self.refresh_data().await;
+                },
+                _ => {}
             }
-            self.time_check.check_sleep(&curr_time).await;
             let mut conn = crate::initialize::MYSQL_POOL.get().unwrap().acquire().await.unwrap();
             for item in &self.real_hold {
                 self.sold_item(item, false, &mut conn).await;
@@ -106,7 +112,7 @@ impl TrackSold {
     pub async fn sold_item(&self, buy_info: &OpeInfo, is_simulate: bool, conn: &mut PoolConnection<MySql>) {
         let mut select_type = "".to_string();
         let judge_rst = match buy_info.select_type.as_str() {
-            "down" => {
+            HISTORY_DOWN_TYPE => {
                 select_type = "Down".to_string();
                 history_down_judge(buy_info).await
             },

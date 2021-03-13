@@ -37,6 +37,11 @@ impl EMASelect {
     }
 
     pub(crate) async fn initialize(&mut self) {
+        self.refresh().await;
+        self.initialized = true;
+    }
+
+    pub async fn refresh(&mut self) {
         // 第负一步：清空以及获取初始化信息
         self.backup_codes.clear();
         self.code2ana_info_map.clear();
@@ -88,7 +93,6 @@ impl EMASelect {
             let ema_ana_info = EMAAnaInfo{ last_ema_value: pre_ema_val };
             self.code2ana_info_map.insert(ts_code, ema_ana_info);
         }
-        self.initialized = true;
     }
 
     /// 策略：获取最近的几条实时信息，如果是正处于下降过程当中的，那么就不加入到备选当中，如果是经历过拐点的，加入到备选当中

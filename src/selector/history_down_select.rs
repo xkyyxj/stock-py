@@ -32,6 +32,13 @@ impl HistoryDownSelect {
     }
 
     pub async fn initialize(&mut self) {
+        self.refresh().await;
+        self.initialized = true;
+    }
+
+    pub async fn refresh(&mut self) {
+        self.selected.clear();
+        self.backup.clear();
         // 第零步：查询最新的history_down表中的记录
         let mut sql = String::from("select in_date from history_down order by in_date desc limit 1");
         let mut last_date_str: String = String::new();
@@ -65,7 +72,6 @@ impl HistoryDownSelect {
                 self.backup.push(temp_info);
             }
         }).await;
-        self.initialized = true;
     }
 
     pub fn get_name() -> String {
