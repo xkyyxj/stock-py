@@ -2,6 +2,10 @@ use pyo3::prelude::*;
 use async_std::task;
 use crate::sold::TrackSold;
 
+pub fn init_track_sold(module: &PyModule) {
+    module.add_class::<TrackSoldStrategy>().unwrap();
+}
+
 #[pyclass]
 pub struct TrackSoldStrategy {
     pub(crate) is_started: bool,
