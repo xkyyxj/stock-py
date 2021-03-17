@@ -8,7 +8,7 @@ pub(crate) static MIN_HISTORY_DOWN_UP_PCT: f64 = 0.00001;
 
 /// 历史低值买入信号配置项
 /// 发出买入信号的最低涨幅
-pub(crate) static MIN_HISTORY_DOWN_BUY_PCT: f64 = 0.03;
+pub(crate) static MIN_HISTORY_DOWN_BUY_PCT: f64 = 0f64;
 
 /// 发出买入信号的最高涨幅
 pub(crate) static MAX_HISTORY_DOWN_BUY_PCT: f64 = 0.07;

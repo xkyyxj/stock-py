@@ -10,7 +10,9 @@ pub use common_select::CommonSelectStrategy;
 
 use pyo3::prelude::PyModule;
 use common_calculate::init_common_calculate;
+use crate::py_wrapper::track_sold::init_track_sold;
 
 pub fn init_py_module(module: &PyModule) {
     init_common_calculate(module);
+    init_track_sold(module);
 }

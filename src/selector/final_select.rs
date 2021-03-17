@@ -66,6 +66,7 @@ impl AllSelectStrategy {
         }
 
         self.insert_simulate.initialize();
+        self.rst_processor.initialize().await;
     }
 
     fn contain_selector(&mut self, name: &String) -> bool {
@@ -117,6 +118,7 @@ impl AllSelectStrategy {
             for item in all_common_rst {
                 temp_rst.merge(&item);
             }
+            self.insert_simulate.write_select_rst_2_simulate(&temp_rst).await;
             // TODO -- 如何选择出最终的wait_select结果？？？？？
             judge_wait_select(&mut temp_rst);
             let new_stocks = self.rst_processor.process(&temp_rst, &curr_time).await;

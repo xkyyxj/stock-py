@@ -59,13 +59,13 @@ impl DBResult for OpeInfo {
     fn insert(&self) -> Query<'_, MySql, MySqlArguments> {
         let mut insert_sql = "";
         if self.simulate {
-            insert_sql = "insert into operate_info_simulate (ts_code, trade_date, simulate, \
+            insert_sql = "insert into operate_info_simulate (ts_code, trade_date, \
             ope_num, ope_close, ope_flag, win_mny, win_pct, select_type, pk_buy_ope, buy_left_num) \
-            values(?,?,?,?,?,?,?,?,?,?,?)";
+            values(?,?,?,?,?,?,?,?,?,?)";
         } else {
-            insert_sql = "insert into operate_info (ts_code, trade_date, simulate, \
+            insert_sql = "insert into operate_info (ts_code, trade_date, \
             ope_num, ope_close, ope_flag, win_mny, win_pct, select_type, pk_buy_ope, buy_left_num) \
-            values(?,?,?,?,?,?,?,?,?,?,?)";
+            values(?,?,?,?,?,?,?,?,?,?)";
         }
         sqlx::query(insert_sql)
     }
@@ -73,11 +73,6 @@ impl DBResult for OpeInfo {
     fn bind<'a>(&'a self, mut query: Query<'a, MySql, MySqlArguments>) -> Query<'a, MySql, MySqlArguments> {
         query = query.bind(&self.ts_code);
         query = query.bind(&self.trade_date);
-        if self.simulate {
-            query = query.bind("Y");
-        } else {
-            query = query.bind("N");
-        }
         query = query.bind(self.ope_num);
         query = query.bind(self.ope_close);
         query = query.bind(&self.ope_flag);
@@ -104,7 +99,7 @@ impl DBResult for OpeInfo {
 
 impl OpeInfo {
     pub fn query_simulate(where_part: Option<String>) -> Vec<Box<Self>> {
-        let mut final_sql = String::from("select * from ope_info_simulate ");
+        let mut final_sql = String::from("select * from operate_info_simulate ");
         final_sql = super::process_where_part(final_sql, where_part);
 
         let mut final_rst = Vec::<Box<OpeInfo>>::new();

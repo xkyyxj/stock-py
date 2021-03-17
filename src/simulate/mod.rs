@@ -60,7 +60,7 @@ impl BuyInfoInsert {
         for item in &rst.select_rst {
             if self.already_buy_codes.contains(&item.ts_code) {
                 // 警告一下
-                warn!("already buy ts_code : {}", &item.ts_code);
+                trace!("already buy ts_code : {}", &item.ts_code);
                 continue;
             }
             let mut buy_info = OpeInfo::new();
@@ -75,6 +75,7 @@ impl BuyInfoInsert {
             buy_info.win_mny = 0f64;
             buy_info.win_pct = 0f64;
             sql::insert(&mut conn, buy_info).await;
+            self.already_buy_codes.push(String::from(&item.ts_code));
         }
     }
 }

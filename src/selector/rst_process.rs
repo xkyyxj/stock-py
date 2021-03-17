@@ -23,6 +23,11 @@ impl CommonTimeRstProcess {
     }
 
     pub async fn initialize(&mut self) {
+        self.refresh().await;
+    }
+
+    pub async fn refresh(&mut self) {
+        self.all_result = CommonSelectRst::new();
         // 第零步：获取当前的日期
         let curr_date_str = time_utils::curr_date_str("%Y%m%d");
         let all_type = vec!["short_time_select", "long_time_select", "wait_select"];

@@ -44,7 +44,7 @@ impl TrackSold {
             let mut sql = String::from("select * from ") + table + " where buy_left_num>0";
             sql::async_common_query(sql.as_str(), |set| {
                 for item in set {
-                    let has_sold: String = item.get("has_sold");
+                    // let has_sold: String = item.get("has_sold");
                     let temp_info = OpeInfo {
                         pk_ope: item.get::<'_, i64, &str>("pk_ope"),
                         ts_code: item.get("ts_code"),
