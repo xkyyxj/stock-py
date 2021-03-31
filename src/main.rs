@@ -12,6 +12,7 @@ mod utils;
 mod selector;
 mod simulate;
 mod sold;
+mod jni_wrapper;
 
 use log::{error, info, warn};
 use std::collections::HashMap;
