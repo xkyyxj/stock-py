@@ -67,7 +67,7 @@ impl DBResult for InLow {
         query.bind(self.in_price)
     }
 
-    fn query(_where_part: Option<String>) -> Vec<Box<InLow>> {
+    fn query(query_info: &super::QueryInfo) -> Vec<Box<InLow>> {
         // TODO -- un finished
         unimplemented!()
     }
@@ -113,9 +113,8 @@ impl DBResult for StockBaseInfo {
         unimplemented!()
     }
 
-    fn query(where_part: Option<String>) -> Vec<Box<Self>> {
-        let mut final_sql = String::from("select * from stock_base_info ");
-        final_sql = super::process_where_part(final_sql, where_part);
+    fn query(query_info: &super::QueryInfo) -> Vec<Box<Self>> {
+        let mut final_sql = super::process_query_info(query_info);
 
         let mut final_rst = Vec::<Box<Self>>::new();
         sql::common_query(final_sql.as_ref(), |rows| {

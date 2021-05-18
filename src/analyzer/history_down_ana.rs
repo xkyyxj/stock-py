@@ -1,5 +1,5 @@
 use crate::cache::AsyncRedisOperation;
-use crate::results::{HistoryDown, DBResult, StockBaseInfo, WaitSelect};
+use crate::results::{HistoryDown, DBResult, StockBaseInfo, WaitSelect, QueryInfo};
 use std::collections::HashMap;
 use crate::sql;
 use async_std::task::sleep;
@@ -39,16 +39,21 @@ impl HistoryDownAnalyzer {
     pub(crate) fn refresh_data(&mut self) {
         // 第一步：查询那些股票已经进入到了待选当中了
         let curr_time_str = crate::utils::time_utils::curr_date_str("%Y%m%d");
+        let mut query_info: QueryInfo = Default::default();
         let mut in_wait_where = String::from("in_date='");
         in_wait_where = in_wait_where + curr_time_str.as_str() + "'";
-        let all_in_wait = WaitSelect::query(Some(in_wait_where));
+        query_info.table_name = Some(String::from("wait_select"));
+        query_info.where_part = Some(in_wait_where);
+        let all_in_wait = WaitSelect::query(&query_info);
         for item in all_in_wait {
             self.already_in_wait.push(String::from(item.ts_code));
         }
 
         // 更新一下昨天的history_down数据
         let history_down_where = String::from("where in_date=(select in_date from history_down order by in_date desc limit 1)");
-        let all_vos = HistoryDown::query(Some(history_down_where));
+        query_info.table_name = Some(String::from("history_down"));
+        query_info.where_part = Some(history_down_where);
+        let all_vos = HistoryDown::query(&query_info);
         self.history_down_vos = all_vos;
 
         // 更新一下基本信息(当前数据库当中最后一天的信息)
@@ -56,7 +61,10 @@ impl HistoryDownAnalyzer {
             let query_str = String::from("ts_code='") + item.ts_code.as_str() +
                 "' and trade_date=(select trade_date from stock_base_info where ts_code='" +
                 item.ts_code.as_str() + "' order by trade_date desc limit 1)";
-            let yesterday_info = StockBaseInfo::query(Some(query_str));
+            let mut query_info: QueryInfo = Default::default();
+            query_info.table_name = Some(String::from("stock_base_info"));
+            query_info.where_part = Some(query_str);
+            let yesterday_info = StockBaseInfo::query(&query_info);
             for info in yesterday_info {
                 self.last_day_info.insert(String::from(&info.ts_code), info);
             }

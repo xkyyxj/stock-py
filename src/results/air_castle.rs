@@ -1,4 +1,4 @@
-use crate::results::{DBResult};
+use crate::results::{DBResult, QueryInfo};
 use sqlx::query::Query;
 use sqlx::{MySql, Row};
 use sqlx::mysql::MySqlArguments;
@@ -45,16 +45,8 @@ impl DBResult for AirCastle {
         query.bind(&self.ave_day_up_pct)
     }
 
-    fn query(where_part: Option<String>) -> Vec<Box<Self>> {
-        let mut final_sql = String::from("select * from air_castle ");
-        if let Some(val) = where_part {
-            if val.contains("where") {
-                final_sql = final_sql.add(val.as_str());
-            } else {
-                final_sql = final_sql.add("where ");
-                final_sql = final_sql.add(val.as_str());
-            }
-        }
+    fn query(query_info: &QueryInfo) -> Vec<Box<Self>> {
+        let mut final_sql = super::process_query_info(query_info);
 
         let mut final_rst = Vec::<Box<Self>>::new();
         sql::common_query(final_sql.as_ref(), |rows| {

@@ -97,7 +97,7 @@ impl AllSelectStrategy {
                 _ => {}
             }
             let (tx, rx) = mpsc::unbounded::<CommonSelectRst>();
-            // 如果添加了新的选择策略，别忘了在这儿添加，现在只能是这样了…………，动态扩展？？？？？？？呵呵哒哒
+            // Important -- 如果添加了新的选择策略，别忘了在这儿添加，现在只能是这样了…………，动态扩展？？？？？？？呵呵哒哒
             let history_down_clone = self.history_down.clone();
             let mut tx_clone = tx.clone();
             task::spawn(async move {

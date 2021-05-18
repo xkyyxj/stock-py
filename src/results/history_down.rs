@@ -55,9 +55,8 @@ impl DBResult for HistoryDown {
         query.bind(self.his_down_price)
     }
 
-    fn query(where_part: Option<String>) -> Vec<Box<Self>> {
-        let mut final_sql = String::from("select * from history_down ");
-        final_sql = super::process_where_part(final_sql, where_part);
+    fn query(query_info: &super::QueryInfo) -> Vec<Box<Self>> {
+        let mut final_sql = super::process_query_info(query_info);
 
         let mut final_rst = Vec::<Box<HistoryDown>>::new();
         sql::common_query(final_sql.as_ref(), |rows| {

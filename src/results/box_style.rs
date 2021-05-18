@@ -1,4 +1,4 @@
-use crate::results::DBResult;
+use crate::results::{DBResult, QueryInfo};
 use sqlx::query::Query;
 use sqlx::{MySql, Row};
 use sqlx::mysql::{MySqlArguments, MySqlRow};
@@ -42,9 +42,8 @@ impl DBResult for BoxStyle {
         query.bind(self.box_min_price)
     }
 
-    fn query(where_part: Option<String>) -> Vec<Box<Self>> {
-        let mut final_sql = String::from("select * from box_style ");
-        final_sql = super::process_where_part(final_sql, where_part);
+    fn query(query_info: &QueryInfo) -> Vec<Box<Self>> {
+        let mut final_sql = super::process_query_info(query_info);
 
         let mut final_rst = Vec::<Box<BoxStyle>>::new();
         sql::common_query(final_sql.as_ref(), |rows| {

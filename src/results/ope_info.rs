@@ -83,29 +83,13 @@ impl DBResult for OpeInfo {
         query.bind(self.buy_left_num)
     }
 
-    fn query(where_part: Option<String>) -> Vec<Box<Self>> {
-        let mut final_sql = String::from("select * from ope_info ");
-        final_sql = super::process_where_part(final_sql, where_part);
+    fn query(query_info: &super::QueryInfo) -> Vec<Box<Self>> {
+        let mut final_sql = super::process_query_info(query_info);
 
         let mut final_rst = Vec::<Box<OpeInfo>>::new();
         sql::common_query(final_sql.as_ref(), |rows| {
             for row in rows {
                 final_rst.push(Box::<Self>::new(process_single_row_for_ope_info(row, false)));
-            }
-        });
-        final_rst
-    }
-}
-
-impl OpeInfo {
-    pub fn query_simulate(where_part: Option<String>) -> Vec<Box<Self>> {
-        let mut final_sql = String::from("select * from operate_info_simulate ");
-        final_sql = super::process_where_part(final_sql, where_part);
-
-        let mut final_rst = Vec::<Box<OpeInfo>>::new();
-        sql::common_query(final_sql.as_ref(), |rows| {
-            for row in rows {
-                final_rst.push(Box::<Self>::new(process_single_row_for_ope_info(row, true)));
             }
         });
         final_rst
@@ -169,9 +153,8 @@ impl DBResult for WaitSold {
         query.bind(self.pk_buy_ope)
     }
 
-    fn query(where_part: Option<String>) -> Vec<Box<Self>> {
-        let mut final_sql = String::from("select * from ope_info ");
-        final_sql = super::process_where_part(final_sql, where_part);
+    fn query(query_info: &super::QueryInfo) -> Vec<Box<Self>> {
+        let mut final_sql = super::process_query_info(query_info);
 
         let mut final_rst = Vec::<Box<WaitSold>>::new();
         sql::common_query(final_sql.as_ref(), |rows| {

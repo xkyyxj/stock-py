@@ -1,5 +1,5 @@
 use crate::selector::CommonSelectRst;
-use crate::results::{OpeInfo, DBResult};
+use crate::results::{OpeInfo, DBResult, QueryInfo};
 use crate::utils::time_utils::curr_date_str;
 use crate::sql;
 use log::{error, info, warn, trace};
@@ -44,7 +44,10 @@ impl BuyInfoInsert {
         let mut where_part = String::from(" trade_date like '");
         where_part += curr_date_str("%Y%m%d").as_str();
         where_part += "%'";
-        self.already_insert = OpeInfo::query_simulate(Some(where_part));
+        let mut query_info: QueryInfo = Default::default();
+        query_info.table_name = Some(String::from("operate_info_simulate"));
+        query_info.where_part = Some(where_part);
+        self.already_insert = OpeInfo::query(&query_info);
         for item in &self.already_insert {
             self.already_buy_codes.push(item.ts_code.clone());
         }

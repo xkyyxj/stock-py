@@ -1,5 +1,3 @@
-
-
 use crate::sql;
 use sqlx::Row;
 use crate::cache::{get_num_last_index_info_redis, AsyncRedisOperation};
@@ -7,8 +5,6 @@ use crate::results::{TimeIndexBaseInfo, HistoryDown};
 use crate::selector::{CommonSelectRst, SingleCommonRst, SHORT_TYPE, LONG_TYPE};
 use futures::channel::mpsc::UnboundedSender;
 use futures::SinkExt;
-
-
 
 pub struct HistoryDownSelect {
     selected: Vec::<String>,

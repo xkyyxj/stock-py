@@ -1,5 +1,5 @@
 use crate::cache::AsyncRedisOperation;
-use crate::results::{DBResult, TimeIndexBatchInfo, StockBaseInfo, BoxStyle};
+use crate::results::{DBResult, TimeIndexBatchInfo, StockBaseInfo, BoxStyle, QueryInfo};
 use std::collections::HashMap;
 
 use async_std::task::sleep;
@@ -37,7 +37,10 @@ impl BoxStyleAnalyzer {
     pub(crate) fn refresh_data(&mut self) {
         // 更新一下昨天的history_down数据
         let box_style_where = String::from("where in_date=(select in_date from box_style order by in_date desc limit 1)");
-        let all_vos = BoxStyle::query(Some(box_style_where));
+        let mut query_info: QueryInfo = Default::default();
+        query_info.table_name = Some(String::from("box_style"));
+        query_info.where_part = Some(box_style_where);
+        let all_vos = BoxStyle::query(&query_info);
         self.box_style_vos = all_vos;
 
         // 更新一下基本信息(当前数据库当中最后一天的信息)
@@ -45,7 +48,9 @@ impl BoxStyleAnalyzer {
             let query_str = String::from("ts_code='") + item.ts_code.as_str() +
                 "' and trade_date=(select trade_date from stock_base_info where ts_code='" +
                 item.ts_code.as_str() + "' order by trade_date desc limit 1)";
-            let yesterday_info = StockBaseInfo::query(Some(query_str));
+            query_info.table_name = Some(String::from("stock_base_info"));
+            query_info.where_part = Some(query_str);
+            let yesterday_info = StockBaseInfo::query(&query_info);
             for info in yesterday_info {
                 self.last_day_info.insert(String::from(&info.ts_code), info);
             }

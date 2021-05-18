@@ -73,7 +73,7 @@ impl DBResult for TimeIndexInfo {
         unimplemented!()
     }
 
-    fn query(_where_part: Option<String>) -> Vec<Box<Self>> {
+    fn query(query_info: &super::QueryInfo) -> Vec<Box<Self>> {
         unimplemented!()
     }
 
