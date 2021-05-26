@@ -48,8 +48,8 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
     loop {
         // 当前时间在开盘时间之内
         let curr_time = Local::now();
-        if (curr_time >= up_begin_time && curr_time <= up_end_time) ||
-            (curr_time >= down_begin_time && curr_time <= down_end_time) {
+        // if (curr_time >= up_begin_time && curr_time <= up_end_time) ||
+        //     (curr_time >= down_begin_time && curr_time <= down_end_time) {
             let ret_rst = surf::get(target_string.as_str()).await;
             if let Err(_) = ret_rst {
                 continue;
@@ -70,54 +70,54 @@ pub async fn fetch_index_info(stock_code: Vec<String>) {
             if real_sleep_time.num_nanoseconds().unwrap() > 0 {
                 sleep(real_sleep_time.to_std().unwrap()).await;
             }
-        }
+        // }
 
         // 早上未开盘之前，休眠
-        if curr_time < up_begin_time {
-            let temp_duration = up_begin_time - curr_time;
-            del_cache(&stock_code, &mut redis_ope).await;
-            // sleep(temp_duration).await;
-            my_sleep(temp_duration).await;
-            // small_step_sleep(&temp_duration).await;
-        }
-
-        // 上午到下午之间的间歇，休眠
-        if curr_time > up_end_time && curr_time <= down_begin_time {
-            let temp_duration = down_begin_time - curr_time;
-            // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
-            // del_cache(&stock_code, &mut redis_ope).await;
-            warn!("after morning sleep time is {}", temp_duration.to_std().unwrap().as_secs());
-            // sleep(temp_duration).await;
-            my_sleep(temp_duration).await;
-            // small_step_sleep(&temp_duration).await;
-            warn!("sleep finished {}", curr_time);
-        }
-
-        // 到了第二天，呵呵哒哒
-        if curr_time > down_end_time {
-            // 午夜三点左右，删除前一天的redis缓存吧
-            let del_redis_duration = Duration::hours(12);
-            let next_three_morning = down_end_time + del_redis_duration;
-            let mut temp_duration = next_three_morning - curr_time;
-            // sleep(temp_duration).await;
-            my_sleep(temp_duration).await;
-            // small_step_sleep(&temp_duration).await;
-            del_cache(&stock_code, &mut redis_ope).await;
-            warn!("delete redis cache time is {}", next_three_morning);
-
-            let after_del_time = Local::now();
-            let next_day_duration = Duration::hours(24);
-            up_begin_time = up_begin_time.add(next_day_duration);
-            temp_duration = up_begin_time - after_del_time;
-            up_end_time = up_end_time.add(next_day_duration);
-            down_begin_time = down_begin_time.add(next_day_duration);
-            down_end_time = down_end_time.add(next_day_duration);
-            warn!("delete redis cache finished time is {}", after_del_time);
-            // sleep(temp_duration).await;
-            my_sleep(temp_duration).await;
-            // small_step_sleep(&temp_duration).await;
-            warn!("next new day time is {}", after_del_time);
-        }
+        // if curr_time < up_begin_time {
+        //     let temp_duration = up_begin_time - curr_time;
+        //     del_cache(&stock_code, &mut redis_ope).await;
+        //     // sleep(temp_duration).await;
+        //     my_sleep(temp_duration).await;
+        //     // small_step_sleep(&temp_duration).await;
+        // }
+        //
+        // // 上午到下午之间的间歇，休眠
+        // if curr_time > up_end_time && curr_time <= down_begin_time {
+        //     let temp_duration = down_begin_time - curr_time;
+        //     // TODO -- 内存不足，redis hold不住了，先这样处理吧；另外可以考虑压缩，后者压缩后存储到磁盘上去
+        //     // del_cache(&stock_code, &mut redis_ope).await;
+        //     warn!("after morning sleep time is {}", temp_duration.to_std().unwrap().as_secs());
+        //     // sleep(temp_duration).await;
+        //     my_sleep(temp_duration).await;
+        //     // small_step_sleep(&temp_duration).await;
+        //     warn!("sleep finished {}", curr_time);
+        // }
+        //
+        // // 到了第二天，呵呵哒哒
+        // if curr_time > down_end_time {
+        //     // 午夜三点左右，删除前一天的redis缓存吧
+        //     let del_redis_duration = Duration::hours(12);
+        //     let next_three_morning = down_end_time + del_redis_duration;
+        //     let mut temp_duration = next_three_morning - curr_time;
+        //     // sleep(temp_duration).await;
+        //     my_sleep(temp_duration).await;
+        //     // small_step_sleep(&temp_duration).await;
+        //     del_cache(&stock_code, &mut redis_ope).await;
+        //     warn!("delete redis cache time is {}", next_three_morning);
+        //
+        //     let after_del_time = Local::now();
+        //     let next_day_duration = Duration::hours(24);
+        //     up_begin_time = up_begin_time.add(next_day_duration);
+        //     temp_duration = up_begin_time - after_del_time;
+        //     up_end_time = up_end_time.add(next_day_duration);
+        //     down_begin_time = down_begin_time.add(next_day_duration);
+        //     down_end_time = down_end_time.add(next_day_duration);
+        //     warn!("delete redis cache finished time is {}", after_del_time);
+        //     // sleep(temp_duration).await;
+        //     my_sleep(temp_duration).await;
+        //     // small_step_sleep(&temp_duration).await;
+        //     warn!("next new day time is {}", after_del_time);
+        // }
     }
 }
 
